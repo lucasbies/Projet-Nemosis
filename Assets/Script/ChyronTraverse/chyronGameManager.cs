@@ -187,9 +187,27 @@ public class chyronGameManager : MonoBehaviour
                 starGiven[i] = true;
                 if (GameManager.Instance != null)
                     GameManager.Instance.changeStat(StatType.Foi, 5f);
+
+                // 🆕 Si c'est la 3ème étoile, retour à SampleScene avec délai
+                if (i == 2)
+                {
+                    Debug.Log("[Chyron] Troisième étoile atteinte ! Retour dans 1.5s...");
+                    isGameOver = true;
+                    scrollSpeed = 0;
+                    UpdateStarsUI(); // Afficher la 3ème étoile immédiatement
+                    StartCoroutine(ReturnToSampleSceneAfterDelay(1.5f));
+                    return;
+                }
             }
         }
         UpdateStarsUI();
+    }
+
+    // Coroutine pour le retour différé
+    private IEnumerator ReturnToSampleSceneAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        SceneManager.LoadScene("SampleScene");
     }
 
     public void HitObstacle()
@@ -241,7 +259,6 @@ public class chyronGameManager : MonoBehaviour
 
         int finalScore = Mathf.FloorToInt(score);
 
-        // TODO: Afficher un écran de game over avant de retourner au menu
         SceneManager.LoadScene("SampleScene");
     }
 
@@ -251,7 +268,7 @@ public class chyronGameManager : MonoBehaviour
 
         for (int i = 0; i < starImages.Length; i++)
         {
-            if (i < starImages.Length && starImages[i] != null)
+            if (starImages[i] != null)
             {
                 starImages[i].sprite = starGiven[i] ? starOnSprite : starOffSprite;
             }

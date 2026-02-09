@@ -225,23 +225,38 @@ public class Laser : MonoBehaviour
             return;
         }
 
-        // Player hit
         if (other.CompareTag(PLAYER_TAG) && !hasHitPlayer && !hasHitShield)
         {
             // Vérifier si un bouclier est proche (cas où le bouclier chevauche le joueur)
             Collider2D[] nearby = Physics2D.OverlapCircleAll(other.transform.position, SHIELD_CHECK_RADIUS);
+            bool shieldNearby = false;
+
             foreach (var c in nearby)
             {
                 if (c != null && c.CompareTag(SHIELD_TAG))
                 {
-                    // Bouclier trouvé proche du joueur - laisser le shield controller décider
-                    return;
+                    shieldNearby = true;
+                    break;
                 }
+            }
+
+            if (shieldNearby)
+            {
+                // Bouclier trouvé proche du joueur - laisser le shield controller décider
+                return;
             }
 
             // Aucun bouclier proche - infliger des dégâts
             hasHitPlayer = true;
-            gameManager.DamagePlayer(damage);
+
+            if (gameManager != null)
+            {
+                gameManager.DamagePlayer(damage);
+            }
+            else
+            {
+                Debug.LogWarning("[Laser] gameManager est null, impossible d'infliger des dégâts!");
+            }
 
             if (playerHitSfx != null)
             {
