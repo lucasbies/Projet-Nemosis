@@ -19,9 +19,9 @@ MonoBehaviour:
   Is_Unlockable: 1
   description: "D\xE9sse du foyer "
   unlockDescription: 
-  relation: -3
-  lastInteractionDay: 2
-  interactionsToday: 6
+  relation: -2
+  lastInteractionDay: 4
+  interactionsToday: 1
   musicLoop: {fileID: 0}
   badConvos: []
   normalConvos:

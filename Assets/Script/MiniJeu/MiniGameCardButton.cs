@@ -1,7 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections;
 
 public class MiniGameCardButton : MonoBehaviour
 {
@@ -30,6 +29,7 @@ public class MiniGameCardButton : MonoBehaviour
             RefreshUI();
     }
 
+    // => on passe maintenant aussi le panelManager explicitement
     public void SetCard(MiniGameCardEffectSO newCard, MiniGameCardPanelManager panel)
     {
         cardData = newCard;
@@ -43,88 +43,40 @@ public class MiniGameCardButton : MonoBehaviour
 
         if (iconImage != null) iconImage.sprite = cardData.icon;
         if (nameText != null) nameText.text = cardData.cardName;
-
-        // Affichage SIMPLE : seulement la description narrative
-        if (descriptionText != null)
-            descriptionText.text = cardData.description;
+        if (descriptionText != null) descriptionText.text = cardData.description;
     }
 
     private void OnClickAnimation()
     {
-        // Vérifier que DOTweenManager existe ET que l'animation n'est pas en cours
-        if (DOTweenManager.Instance == null)
+        if (DOTweenManager.Instance.IsAnimating == false)
         {
-            Debug.LogError("[MiniGameCardButton] DOTweenManager.Instance est null!");
-            DirectExecute(); // Fallback : exécuter directement
-            return;
+            StartCoroutine(DOTweenManager.Instance.OnActionCardMiniJeuAnimation(gameObject.transform, AfterOnClick));
         }
+    }
 
-        if (DOTweenManager.Instance.IsAnimating)
-        {
-            Debug.LogWarning("[MiniGameCardButton] Animation déjà en cours, clic ignoré.");
-            return;
-        }
+    private void AfterOnClick()
+    {
+        Debug.Log($"[MiniGameCardButton] OnClick sur {cardData?.cardName}");
 
-        if (cardData != null && MiniGameCardRuntime.Instance != null)
-        {
+        if (cardData == null) return;
+
+        // 1) Sauvegarder la carte choisie pour le prochain mini-jeu
+        if (MiniGameCardRuntime.Instance != null)
             MiniGameCardRuntime.Instance.SelectCard(cardData);
-            Debug.Log($"[MiniGameCardButton] Carte '{cardData.cardName}' sélectionnée et stockée.");
-        }
 
-        if (_panelManager != null)
-            _panelManager.MarkCardUsed(cardData);
-
-        if (DOTweenManager.Instance != null)
-        {
-            DOTweenManager.Instance.StartCoroutine(PlayFullMiniGameCardSequence());
-        }
-    }
-
-    private IEnumerator PlayFullMiniGameCardSequence()
-    {
-        yield return DOTweenManager.Instance.StartCoroutine(
-            DOTweenManager.Instance.AnimationCardMiniJeuSimple(transform, null)
-        );
-
-        Debug.Log("[MiniGameCardButton] Animation de carte terminée.");
-
-        if (_panelManager != null && _panelManager.gameObject.activeInHierarchy)
-        {
-            _panelManager.gameObject.SetActive(false);
-        }
-
-        yield return DOTweenManager.Instance.StartCoroutine(
-            DOTweenManager.Instance.transitionChoixJeu(AfterAllAnimations, endday: true)
-        );
-    }
-
-    private void AfterAllAnimations()
-    {
-        Debug.Log($"[MiniGameCardButton] Toutes animations terminées pour {cardData?.cardName}");
-
-
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.CloseMiniJeuCardPanelAndBackToModeChoice();
-        }
-    }
-
-    private void DirectExecute()
-    {
-        if (cardData != null && MiniGameCardRuntime.Instance != null)
-        {
-            MiniGameCardRuntime.Instance.SelectCard(cardData);
-        }
-
+        // 2) NE PLUS SUPPRIMER de la collection, juste marquer comme utilis�e
         if (_panelManager != null)
         {
             _panelManager.MarkCardUsed(cardData);
-            _panelManager.gameObject.SetActive(false);
         }
 
+        // 3) Avancer le temps (Matin -> Aprem, Aprem -> jour suivant)
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.EndHalfDay();
+        }
 
+        // 4) Fermer le panel mini-jeu et revenir au ModeChoiceUI
         if (UIManager.Instance != null)
             UIManager.Instance.CloseMiniJeuCardPanelAndBackToModeChoice();
     }

@@ -256,6 +256,7 @@ public class TriGameManager : MonoBehaviour
 
     private void ApplyMiniGameCardIfAny()
     {
+        // vérifie si une carte est sélectionnée et applique ses effets
         var runtime = MiniGameCardRuntime.Instance;
         if (runtime == null || runtime.SelectedCard == null)
             return;
@@ -264,59 +265,40 @@ public class TriGameManager : MonoBehaviour
         if (card.targetMiniGame != MiniGameType.Any && card.targetMiniGame != MiniGameType.Tri)
             return;
 
-        // Effets génériques
+        // applique les modifs de la carte
         float speedMult = Mathf.Max(0.1f, card.speedMultiplier);
         float diffMult = Mathf.Max(0.5f, card.difficultyMultiplier);
         float spawnMult = Mathf.Max(0.1f, card.spawnRateMultiplier);
 
+        // plus de vitesse = partie plus courte
         gameDuration = _baseGameDuration / speedMult;
 
         if (spawner != null)
         {
+            // vitesse + densité
             float interval = _baseSpawnInterval / speedMult;
             interval /= spawnMult;
+
+            // applique du chaos(plein d'effets différents) au spawn des âmes
             _spawnChaos = Mathf.Clamp01(card.chaosLevel);
+
             spawner.spawnInterval = interval;
         }
 
+        // score par âme augmenter avec la difficulté
         _baseScorePerSoul = Mathf.Max(1, Mathf.RoundToInt(_baseScorePerSoul * diffMult));
+
+        // gains de stats globaux
         _rewardMult = Mathf.Max(0.1f, card.rewardMultiplier);
         _rewardFlat = card.rewardFlatBonus;
         _oneMistakeFail = card.oneMistakeFail;
 
-        // 🆕 EFFETS SPÉCIFIQUES TRI
-        if (card.shuffleZones)
-        {
-            ShuffleDropZones();
-        }
-
-        if (card.invertSoulColors)
-        {
-            InvertSoulVisuals();
-        }
-
-        Debug.Log($"[Tri] Carte appliquée : {card.cardName}, " +
-            $"duration={gameDuration}, spawnInterval={spawner.spawnInterval}, " +
-            $"scorePerSoul={_baseScorePerSoul}, chaos={_spawnChaos}, " +
-            $"shuffleZones={card.shuffleZones}, invertColors={card.invertSoulColors}");
+        Debug.Log($"[Tri] Carte appliquée : {card.cardName}, duration={gameDuration}," +
+            $" spawnInterval={spawner.spawnInterval}, scorePerSoul={_baseScorePerSoul}," +
+            $" chaos={_spawnChaos}, rewardMult={_rewardMult}, rewardFlat={_rewardFlat}, " +
+            $"oneMistakeFail={_oneMistakeFail}");
 
         runtime.Clear();
-    }
-
-
-    ///  Mélange les positions des zones de dépôt
-    private void ShuffleDropZones()
-    {
-        // Implémentation : réorganiser les zones bleue/jaune/rouge
-        Debug.Log("[Tri] Zones de dépôt mélangées !");
-        // Exemple : échanger les positions des DropZone dans la scène
-    }
-
-    /// Inverse les couleurs visuelles des âmes (âme bonne devient rouge visuellement)
-    private void InvertSoulVisuals()
-    {
-        Debug.Log("[Tri] Couleurs des âmes inversées !");
-        // Implémentation : modifier les sprites/couleurs des âmes
     }
 
     // Affiche le tuto et lance la partie après validation

@@ -13,52 +13,51 @@ public class MainMenu : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private Button continueButton;
+
     [SerializeField] private GameObject firstSelected;
 
-    private void Awake()
-    {
-        // IMPORTANT: Réinitialiser l'état de pause
-        PauseController.ResetPauseState();
-        Time.timeScale = 1f;
-    }
+
 
     private void OnEnable()
     {
-        // Focus manette
-        if (EventSystem.current != null && firstSelected != null)
+        if (EventSystem.current == null || firstSelected == null)
+            return;
+
+        EventSystem.current.SetSelectedGameObject(null);
+        EventSystem.current.SetSelectedGameObject(firstSelected);
+    }
+    private void Start()
+    {
+        // Désactiver le bouton "Continuer" s'il n'y a pas de sauvegarde
+        bool hasSave = PlayerPrefs.HasKey(SAVE_KEY);
+        if (continueButton != null)
         {
-            EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(firstSelected);
+            continueButton.interactable = hasSave;
+            // ou continueButton.gameObject.SetActive(hasSave); si tu veux complètement le cacher
         }
     }
 
-    private void Start()
-    {
-        // Double sécurité pour le timeScale
-        Time.timeScale = 1f;
-
-        // Désactiver "Continuer" si pas de sauvegarde
-        bool hasSave = PlayerPrefs.HasKey(SAVE_KEY);
-        if (continueButton != null)
-            continueButton.interactable = hasSave;
-    }
-
+    //Lance une nouvelle partie
     public void Play()
     {
-        // Supprimer l'ancienne sauvegarde
-        PlayerPrefs.DeleteKey(SAVE_KEY);
+        // supprimer l'ancienne sauvegarde de partie
+        PlayerPrefs.DeleteKey("GAME_SAVE_v1");
+
+        // flag pour dire "nouvelle partie"
         PlayerPrefs.SetInt("NEW_GAME_REQUESTED", 1);
         PlayerPrefs.Save();
 
-        // Détruire l'ancien GameManager
+        // Détruire explicitement l'ancien GameManager s'il existe,
+        // pour forcer une réinitialisation propre.
         if (GameManager.Instance != null)
-            Destroy(GameManager.Instance.gameObject);
+        {
+            Object.Destroy(GameManager.Instance.gameObject);
+        }
 
-        // Réinitialiser la pause et charger
-        PauseController.ResetPauseState();
         SceneManager.LoadScene(gameplaySceneName);
     }
 
+    ///Lance la partie sauvegardée
     public void Continue()
     {
         if (!PlayerPrefs.HasKey(SAVE_KEY))
@@ -67,21 +66,28 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        PauseController.ResetPauseState();
+        if (GameManager.Instance == null)
+        {
+            Debug.LogError("[MainMenu] GameManager.Instance est null dans le menu.");
+        }
+
         SceneManager.sceneLoaded += OnGameplaySceneLoaded;
         SceneManager.LoadScene(gameplaySceneName);
     }
 
+    //amène au menu des options
     public void Options()
     {
         SceneManager.LoadScene(optionsSceneName);
     }
 
+    //Quitte le jeu
     public void Quit()
     {
         Application.Quit();
     }
 
+    // si on appuie sur continuer, on charge la sauvegarde après le chargement de la scène de jeu
     private void OnGameplaySceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name != gameplaySceneName)
@@ -89,13 +95,25 @@ public class MainMenu : MonoBehaviour
 
         SceneManager.sceneLoaded -= OnGameplaySceneLoaded;
 
+        // Charger la sauvegarde
         if (GameManager.Instance != null)
+        {
             GameManager.Instance.LoadGame();
+        }
+        else
+        {
+            Debug.LogError("[MainMenu] GameManager.Instance est null après chargement.");
+        }
 
+        // Activer l'UI principale
         if (UIManager.Instance != null)
         {
             UIManager.Instance.SetUIActive(true);
             UIManager.Instance.ShowMainUI();
+        }
+        else
+        {
+            Debug.LogWarning("[MainMenu] UIManager.Instance est null.");
         }
     }
 }

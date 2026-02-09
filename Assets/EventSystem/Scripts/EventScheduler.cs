@@ -24,41 +24,6 @@ public class EventScheduler : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-
-        // 🆕 Ajouter automatiquement les événements programmés au ScheduleManager
-        SyncEventsToScheduleManager();
-    }
-
-    /// <summary>
-    /// 🆕 Synchronise les événements programmés vers le ScheduleManager pour affichage
-    /// </summary>
-    private void SyncEventsToScheduleManager()
-    {
-        if (ScheduleManager.Instance == null || scheduledEvents == null)
-            return;
-
-        foreach (var eventDay in scheduledEvents)
-        {
-            if (eventDay.gameEvent == null)
-                continue;
-
-            EventInfo info = eventDay.gameEvent.GetEventInfo();
-
-            // Ajouter au ScheduleManager si pas déjà présent
-            if (!ScheduleManager.Instance.HasScheduledActivity(eventDay.day, eventDay.triggerTime))
-            {
-                ScheduleManager.Instance.AddScheduleEntry(
-                    eventDay.day,
-                    eventDay.triggerTime,
-                    $"📢 {info.eventName}",
-                    ScheduleActivityType.Event,
-                    info.description,
-                    info.eventImage
-                );
-
-                Debug.Log($"[EventScheduler] Événement '{info.eventName}' ajouté à l'emploi du temps : Jour {eventDay.day} ({eventDay.triggerTime})");
-            }
-        }
     }
 
     /// <summary>

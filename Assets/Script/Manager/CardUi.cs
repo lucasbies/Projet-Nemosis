@@ -63,27 +63,5 @@ public class CardUI : MonoBehaviour
             GameManager.Instance.EndHalfDay();
         }
     }
-
-    public void OnCardClicked()
-    {
-        if (currentCard == null || DOTweenManager.Instance == null) return;
-
-        // 🆕 Vérifier si c'est une carte qui augmente le MAX
-        if (currentCard.NeedsMaxStatAnimation())
-        {
-            // Animation spéciale clignotement doré
-            StartCoroutine(DOTweenManager.Instance.AnimationCardMaxStat(
-                transform, 
-                () => { currentCard.PlayCard(); }
-            ));
-        }
-        else
-        {
-            // Animation normale de carte village
-            StartCoroutine(DOTweenManager.Instance.OnActionCardAnimation(
-                transform, 
-                currentCard
-            ));
-        }
-    }
+    
 }

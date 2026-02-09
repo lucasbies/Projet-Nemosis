@@ -32,11 +32,6 @@ public class DOTweenManager : MonoBehaviour
             HorlogeFond.SetActive(false);
             HorlogeCadre.SetActive(false);
             DontDestroyOnLoad(gameObject);
-
-            // Préserver les objets visuels entre les scènes
-            if (HorlogeFond != null) DontDestroyOnLoad(HorlogeFond);
-            if (HorlogeCadre != null) DontDestroyOnLoad(HorlogeCadre);
-            if (NuagesParents != null) DontDestroyOnLoad(NuagesParents);
         }
         else
         {
@@ -50,38 +45,23 @@ public class DOTweenManager : MonoBehaviour
         {
             AudioManager.Instance.PlaySFX(transitionSound);
         }
-
-        // 🐛 CORRECTION : Déterminer si on doit faire l'animation d'horloge AVANT de commencer
-        bool shouldAnimateClock = endday &&
-                                   GameManager.Instance != null &&
-                                   GameManager.Instance.currentTime == DayTime.Aprem;
-
-        Debug.Log($"[DOTweenManager] transitionChoixJeu - endday={endday}, shouldAnimateClock={shouldAnimateClock}");
-
+        if (endday && GameManager.Instance.currentTime == DayTime.Matin){endday = false;}
         IsAnimating = true;
-
         try
         {
-            // Si les références manquent, on exécute le callback et on libère IsAnimating
+            // Si les références manquent, on exécute le callback et on libère IsAnimating pour éviter de bloquer les boutons
             if (NuagesParents == null)
             {
                 Debug.LogWarning("[DOTweenManager] NuagesParents manquant, annulation de l'animation.");
                 callback?.Invoke();
-
-                // 🆕 CORRECTION : Appeler EndHalfDay même si l'animation échoue
-                if (endday && GameManager.Instance != null)
-                {
-                    GameManager.Instance.EndHalfDay();
-                }
-
                 yield break;
             }
 
             // Stocker les positions initiales
             Transform[] nuages = NuagesParents.GetComponentsInChildren<Transform>();
-
+            
             DG.Tweening.Sequence s = DOTween.Sequence();
-            s.SetUpdate(true);
+            s.SetUpdate(false); // Utilise le temps réel (unscaled time)
 
             // Fade du titre puis décalage des nuages un par un avec délai entre chaque
             float delay = 0f;
@@ -89,58 +69,57 @@ public class DOTweenManager : MonoBehaviour
             foreach (Transform nuage in nuages)
             {
                 compteurs++;
-
+                
                 if (nuage == NuagesParents.transform) continue; // ignore le parent
-
                 if (compteurs % 2 == 0) // nuage pair va à gauche
                     s.Join(nuage.DOMoveX(nuage.position.x + 50f, 0.4f).SetEase(Ease.OutBack));
                 else // nuage impair va à droite
                     s.Insert(delay, nuage.DOMoveX(nuage.position.x + 50f, 0.3f).SetEase(Ease.OutBack));
-
                 delay += 0.1f;
             }
 
-            // Attendre que la séquence soit finie
+            // 2. On attend que la SÉQUENCE entière soit finie
             yield return s.WaitForCompletion();
-            Debug.Log("[DOTweenManager] Animation de transition (aller) terminée.");
+            Debug.Log("[DOTweenManager] Animation de transition terminée, exécution du callback.");
 
-            callback?.Invoke();
-
-            if (endday && GameManager.Instance != null)
+            // S'assurer que l'UI est active avant d'appeler le callback qui peut déclencher des mises à jour UI/coroutines
+            if (UIManager.Instance != null && !UIManager.Instance.gameObject.activeInHierarchy)
             {
-                Debug.Log("[DOTweenManager] Appel de EndHalfDay()");
-                GameManager.Instance.EndHalfDay();
+                UIManager.Instance.SetUIActive(true);
             }
 
+            callback?.Invoke();
+            
+            // Keep gameplay unpaused after callback
             // Créer une NOUVELLE séquence pour le retour
             DG.Tweening.Sequence s2 = DOTween.Sequence();
-            s2.SetUpdate(true);
-
+            s2.SetUpdate(false); // Utilise le temps réel (unscaled time)
             delay = 0f;
             foreach (Transform nuage in nuages)
             {
-                if (nuage == NuagesParents.transform) continue;
-
+                if (nuage == NuagesParents.transform) continue; // ignore le parent
+                
+                // Utiliser DOMove relatif (delta de -50 depuis la position actuelle)
                 s2.Insert(delay, nuage.transform.DOMoveX(nuage.position.x - 50f, 0.3f).SetEase(Ease.OutBack));
                 delay += 0.1f;
             }
-
+            
             yield return s2.WaitForCompletion();
-            Debug.Log("[DOTweenManager] Animation de transition (retour) terminée.");
         }
         finally
         {
+            //Time.timeScale = 1f;
             IsAnimating = false;
         }
-
-        if (shouldAnimateClock)
-        {
-            IsAnimating = true;
-            Debug.Log("[DOTweenManager] Début animation horloge (fin de journée).");
-            yield return StartCoroutine(OnActionEndDayAnimation());
-            IsAnimating = false;
-        }
+        if (endday)
+            {   
+                IsAnimating = true;
+                StartCoroutine(OnActionEndDayAnimation());
+                yield return new WaitForSeconds(3.5f);
+                IsAnimating = false;
+            }
     }
+
     public IEnumerator animationCard(Transform cardTransform, Action callback)
     {
         Vector3 posInitial = cardTransform.position;
@@ -229,32 +208,23 @@ public class DOTweenManager : MonoBehaviour
             yield break;
         }
         
-        if (!IsAnimating)
+        if (IsAnimating == false)
         {
-            // 🆕 Vérifier si c'est une carte MAX
-            if (card.NeedsMaxStatAnimation())
-            {
-                // Utiliser l'animation de clignotement
-                StartCoroutine(AnimationCardMaxStat(cardTransform, () => { card.PlayCard(); }));
-                yield return new WaitForSeconds(2f); // Durée animation MAX
-            }
-            else
-            {
-                // Animation normale (trajectoire courbe)
-                StartCoroutine(animationCard(cardTransform, () => { card.PlayCard(); }));
-                yield return new WaitForSeconds(4.5f);
-            }
             
+            StartCoroutine(animationCard(cardTransform, () => { card.PlayCard();}));
+            yield return new WaitForSeconds(4.5f);
             StartCoroutine(transitionChoixJeu(() => CardUI.Instance.AfterCard(), true));
         }
     }
 
     public IEnumerator OnActionCardMiniJeuAnimation(Transform cardTransform, Action Callback)
     {
-        if (!IsAnimating)
+        
+        if (IsAnimating == false)
         {
-            StartCoroutine(AnimationCardMiniJeuSimple(cardTransform, Callback));
-            yield return new WaitForSeconds(1.5f); // Durée du clignotement
+            
+            StartCoroutine(animationCard(cardTransform, () => {;}));
+            yield return new WaitForSeconds(2f);
             StartCoroutine(transitionChoixJeu(Callback, true));
         }
     }
@@ -312,177 +282,10 @@ public class DOTweenManager : MonoBehaviour
         HorlogeFond.SetActive(false);
         HorlogeCadre.SetActive(false);
     }
-
-    /// Animation spéciale pour les cartes MINI-JEUX (effet électrique/énergie)
-    public IEnumerator AnimationCardMiniJeu(Transform cardTransform, Action callback)
-    {
-        Vector3 posInitial = cardTransform.position;
-        Vector3 scaleInitial = cardTransform.localScale;
-        Quaternion rotInitial = cardTransform.rotation;
-        IsAnimating = true;
-
-        // Positions en espace écran
-        Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0);
-        Vector3 worldCenter = Camera.main.ScreenToWorldPoint(screenCenter);
-        worldCenter.z = cardTransform.position.z;
-
-        // === PHASE 1 : Effet d'aspiration vers le centre avec rotation rapide ===
-        DG.Tweening.Sequence s1 = DOTween.Sequence();
-        s1.SetUpdate(true);
-
-        float phase1Duration = 0.8f;
-        s1.Append(cardTransform.DOMove(worldCenter, phase1Duration).SetEase(Ease.InOutBack));
-        s1.Join(cardTransform.DOScale(1.5f, phase1Duration).SetEase(Ease.OutElastic));
-        // Rotation multiple pour effet "tourbillon"
-        s1.Join(cardTransform.DORotate(new Vector3(0, 720, 0), phase1Duration, RotateMode.FastBeyond360).SetEase(Ease.InOutQuad));
-
-        yield return s1.WaitForCompletion();
-
-        // === PHASE 2 : Pulsation énergétique au centre ===
-        DG.Tweening.Sequence s2 = DOTween.Sequence();
-        s2.SetUpdate(true);
-
-        // Couleur électrique (cyan/bleu électrique)
-        Image cardImage = cardTransform.GetComponent<Image>();
-        if (cardImage != null)
-        {
-            Color electricBlue = new Color(0f, 0.8f, 1f, 1f);
-            Color originalColor = cardImage.color;
-            
-            // Flash électrique rapide
-            s2.Append(cardImage.DOColor(electricBlue, 0.1f));
-            s2.Append(cardImage.DOColor(Color.white, 0.1f));
-            s2.Append(cardImage.DOColor(electricBlue, 0.1f));
-            s2.Append(cardImage.DOColor(originalColor, 0.15f));
-        }
-
-        // Pulsations de scale rapides
-        s2.Join(cardTransform.DOScale(1.7f, 0.2f).SetEase(Ease.OutQuad));
-        s2.Append(cardTransform.DOScale(1.5f, 0.15f).SetEase(Ease.InQuad));
-        s2.Append(cardTransform.DOScale(1.6f, 0.1f));
-
-        yield return s2.WaitForCompletion();
-
-        // 🎯 Callback : activation de l'effet de la carte
-        callback?.Invoke();
-
-        // === PHASE 3 : Explosion d'énergie et disparition ===
-        DG.Tweening.Sequence s3 = DOTween.Sequence();
-        s3.SetUpdate(true);
-
-        float phase3Duration = 0.6f;
-        
-        // Scale explosif + rotation finale
-        s3.Append(cardTransform.DOScale(2.5f, phase3Duration * 0.5f).SetEase(Ease.OutQuad));
-        s3.Join(cardTransform.DORotate(new Vector3(0, 0, 180), phase3Duration * 0.5f, RotateMode.FastBeyond360));
-        
-        // Fade out rapide
-        if (cardImage != null)
-        {
-            s3.Join(cardImage.DOFade(0f, phase3Duration * 0.5f));
-        }
-
-        // Disparition complète
-        s3.Append(cardTransform.DOScale(0f, phase3Duration * 0.5f).SetEase(Ease.InBack));
-
-        yield return s3.WaitForCompletion();
-        yield return new WaitForSeconds(0.5f);
-
-        // Retour à l'état initial
-        StartCoroutine(ReturnInitCard(cardTransform, posInitial, scaleInitial, rotInitial));
-    }
-    
-    /// <summary>
-    /// 🆕 Animation de clignotement doré pour une carte qui augmente le MAX
-    /// Dimensions carte : 100x100, Scale 7, Anchors 0.5
-    /// </summary>
-    public IEnumerator AnimationCardMaxStat(Transform cardTransform, Action callback)
-    {
-        IsAnimating = true;
-        
-        Vector3 scaleInitial = cardTransform.localScale;
-        Image cardImage = cardTransform.GetComponent<Image>();
-        
-        if (cardImage == null)
-        {
-            Debug.LogWarning("[DOTweenManager] Pas d'Image sur la carte pour l'animation MAX.");
-            callback?.Invoke();
-            IsAnimating = false;
-            yield break;
-        }
-
-        Color originalColor = cardImage.color;
-        Color goldColor = new Color(1f, 0.84f, 0f, 1f); // Or brillant
-        
-        // Kill les tweens existants
-        DOTween.Kill(cardTransform);
-        DOTween.Kill(cardImage);
-
-        // 🎯 Animation simple : 5 clignotements dorés + léger scale
-        Sequence seq = DOTween.Sequence();
-        seq.SetUpdate(true);
-
-        // Clignotements dorés (5 fois)
-        for (int i = 0; i < 5; i++)
-        {
-            seq.Append(cardImage.DOColor(goldColor, 0.12f));
-            seq.Append(cardImage.DOColor(originalColor, 0.12f));
-        }
-
-        // Léger scale up/down pour attirer l'attention
-        seq.Join(cardTransform.DOScale(scaleInitial * 1.15f, 0.3f).SetEase(Ease.OutQuad));
-        seq.Append(cardTransform.DOScale(scaleInitial, 0.3f).SetEase(Ease.InQuad));
-
-        yield return seq.WaitForCompletion();
-
-        // 🎯 Callback : activation de l'effet
-        callback?.Invoke();
-
-        yield return new WaitForSeconds(0.3f);
-
-        IsAnimating = false;
-    }
-    
-    public IEnumerator AnimationCardMiniJeuSimple(Transform cardTransform, Action callback)
-    {
-        IsAnimating = true;
-        
-        Image cardImage = cardTransform.GetComponent<Image>();
-        
-        if (cardImage == null)
-        {
-            Debug.LogWarning("[DOTweenManager] Pas d'Image sur la carte pour l'animation mini-jeu.");
-            callback?.Invoke();
-            IsAnimating = false;
-            yield break;
-        }
-
-        Color originalColor = cardImage.color;
-        Color skyBlue = new Color(0.53f, 0.81f, 0.98f, 1f); // Bleu ciel (#87CEEB)
-        
-        // Kill les tweens existants
-        DOTween.Kill(cardImage);
-
-        //JUSTE 5 clignotements bleu ciel
-        Sequence seq = DOTween.Sequence();
-        seq.SetUpdate(true);
-
-        for (int i = 0; i < 5; i++)
-        {
-            seq.Append(cardImage.DOColor(skyBlue, 0.12f));
-            seq.Append(cardImage.DOColor(originalColor, 0.12f));
-        }
-
-        yield return seq.WaitForCompletion();
-
-        // Callback : activation de l'effet
-        callback?.Invoke();
-
-        yield return new WaitForSeconds(0.3f);
-
-        IsAnimating = false;
-    }
     
     #endregion
+
+
+
 }
 

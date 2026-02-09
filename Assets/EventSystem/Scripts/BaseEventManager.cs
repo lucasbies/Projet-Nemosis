@@ -45,14 +45,16 @@ public abstract class BaseEventManager : MonoBehaviour
     /// </summary>
     public void CompleteEvent()
     {
-        finalScore = CalculateScore();
-        Debug.Log($"Mini-jeu terminé avec score : {finalScore}");
-
-        if (EventScheduler.Instance != null)
+        if (finalScore != 0)
+        {
+            Debug.Log($"Mini-jeu terminé avec score : {finalScore}");
+            finalScore = CalculateScore();
+            if (EventScheduler.Instance != null)
         {
             EventScheduler.Instance.SetEventScore(finalScore);
         }
 
+        }
         ReturnToBaseGame();
     }
 

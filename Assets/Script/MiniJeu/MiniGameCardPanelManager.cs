@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using TMPro;
+using TMPro; // Ajoutez ceci en haut du fichier
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,8 +17,8 @@ public class MiniGameCardPanelManager : MonoBehaviour
     [SerializeField] private int cardsToDraw = 3;
 
     [Header("UI")]
-    [SerializeField] private TMP_Text rerollText;
-    [SerializeField] private Button rerollButton;
+    [SerializeField] private TMP_Text rerollText; // Ajoutez ce champ
+    [SerializeField] private Button rerollButton; // Nouveau : bouton de reroll sur le panel
 
     // Cartes déjà utilisées (pour la journée / session en cours)
     private readonly HashSet<MiniGameCardEffectSO> _usedCards = new HashSet<MiniGameCardEffectSO>();
@@ -33,7 +33,7 @@ public class MiniGameCardPanelManager : MonoBehaviour
         }
 
         RandomizeCards();
-        UpdateRerollText();
+        UpdateRerollText(); // Ajoutez cet appel pour l'init
     }
 
     public void RandomizeCards()
@@ -91,41 +91,20 @@ public class MiniGameCardPanelManager : MonoBehaviour
         if (card != null)
             _usedCards.Add(card);
 
+        // Optionnel : mettre à jour l'affichage du reroll (utile si vous voulez montrer qu'une carte a été choisie)
         UpdateRerollText();
     }
 
-    /// <summary>
-    /// Fermeture manuelle du panel (si tu as un bouton "Retour" par ex.)
-    /// Maintenant passe aussi par DOTweenManager pour garder les transitions cohérentes.
-    /// </summary>
     public void ClosePanel()
     {
-        // On masque immédiatement le panel
         gameObject.SetActive(false);
-
-        // Si pas de DOTweenManager, fallback ancien comportement
-        if (DOTweenManager.Instance == null)
-        {
-            UIManager.Instance?.GameModeChoice();
-            GameManager.Instance?.EndHalfDay();
-            return;
-        }
-
-        // Transition nuages + fin de demi-journée (avec horloge si applicable)
-        StartCoroutine(DOTweenManager.Instance.transitionChoixJeu(
-            () =>
-            {
-                // Callback après les nuages
-                UIManager.Instance?.GameModeChoice();
-                GameManager.Instance?.EndHalfDay();
-            },
-            true // endday => déclenche aussi l’animation de fin de journée selon l’heure
-        ));
+        UIManager.Instance?.GameModeChoice();
+        GameManager.Instance?.EndHalfDay();
     }
 
     public void RerollMiniGameCards()
     {
-        // Limite de rerolls par jour
+        // Optionnel : limite de rerolls par jour
         if (GameManager.Instance == null)
         {
             Debug.LogWarning("[MiniGameCardPanelManager] GameManager.Instance est null.");
@@ -135,6 +114,7 @@ public class MiniGameCardPanelManager : MonoBehaviour
         if (GameManager.Instance.RerollsRemaining <= 0)
         {
             Debug.LogWarning("[MiniGameCardPanelManager] Pas de rerolls restants !");
+            // Désactiver bouton pour éviter spam
             if (rerollButton != null) rerollButton.interactable = false;
             UpdateRerollText();
             return;
@@ -142,7 +122,7 @@ public class MiniGameCardPanelManager : MonoBehaviour
 
         GameManager.Instance.RerollsRemaining--;
         RandomizeCards();
-        UpdateRerollText();
+        UpdateRerollText(); // Ajoutez cet appel
     }
 
     private void UpdateRerollText()
