@@ -947,4 +947,88 @@ public class UIManager : MonoBehaviour
             }
         }
     }
+
+    public void PlayMaxStatIncreaseAnimation(StatType affectedStat)
+    {
+        GameObject panel = null;
+        switch (affectedStat)
+        {
+            case StatType.Foi:
+                panel = StatFoi;
+                break;
+            case StatType.Nemosis:
+                panel = StatNemosis;
+                break;
+            case StatType.Human:
+                panel = StatHumain;
+                break;
+            case StatType.Or:
+                panel = StatArgent;
+                break;
+            case StatType.Food:
+                panel = StatFood;
+                break;
+        }
+
+        if (panel == null)
+            return;
+
+        Image statImage = GetStatImage(panel);
+        RectTransform panelRect = panel.GetComponent<RectTransform>();
+
+        if (statImage == null || panelRect == null)
+            return;
+
+        Color originalColor = statImage.color;
+        Color goldColor = new Color(1f, 0.84f, 0f, originalColor.a); // Couleur dorée
+
+        // Kill les tweens existants
+        DOTween.Kill(statImage);
+        DOTween.Kill(panelRect);
+
+        // Séquence d'animation : pulsation dorée
+        var seq = DOTween.Sequence();
+
+        // Flash doré
+        seq.Append(statImage.DOColor(goldColor, 0.2f).SetEase(Ease.OutQuad));
+        seq.Append(statImage.DOColor(originalColor, 0.3f).SetEase(Ease.InQuad));
+        seq.Append(statImage.DOColor(goldColor, 0.2f).SetEase(Ease.OutQuad));
+        seq.Append(statImage.DOColor(originalColor, 0.3f).SetEase(Ease.InQuad));
+
+        // Scale up puis down
+        panelRect.DOScale(0.85f, 0.4f).SetEase(Ease.OutBack).SetLoops(2, LoopType.Yoyo);
+    }
+
+    public void HideAllUIForPause()
+    {
+        HideTooltip();
+        HideInteractionMenu();
+        HideVillageUI();
+        DayModeChoice(false);
+        if (dayModeChoicePanel != null) dayModeChoicePanel.SetActive(false);
+        if (PanelStats != null) PanelStats.SetActive(false);
+        if (Date != null) Date.gameObject.SetActive(false);
+        if (miniJeuCardPanel != null) miniJeuCardPanel.SetActive(false);
+        if (eventPanel != null) eventPanel.SetActive(false);
+    }
+
+
+    public void ShowMainUIAfterPause()
+    {
+        if (PanelStats != null) PanelStats.SetActive(true);
+        if (Date != null) Date.gameObject.SetActive(true);
+
+        // Réafficher le panneau approprié selon le mode de jeu
+        if (GameManager.Instance != null && GameManager.Instance.currentGameMode == GameManager.GameMode.village)
+        {
+            // Si on était en mode village, réafficher le village
+            if (villagePanel != null && villagePanel.activeSelf)
+                villagePanel.SetActive(true);
+        }
+        else
+        {
+            // Sinon afficher le panneau de choix de mode
+            GameModeChoice();
+        }
+    }
 }

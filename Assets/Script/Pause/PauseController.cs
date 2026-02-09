@@ -2,49 +2,65 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
+
 public class PauseController : MonoBehaviour
 {
+    private static PauseController _instance;
+    public static PauseController Instance => _instance;
+
+    // État de pause - statique pour persister entre les scènes
     public static bool IsGamePaused { get; private set; } = false;
 
-    [Header("Référence UI Pause")]
-    [SerializeField] private PauseManager pauseManager; // assigne ton PauseManager dans l’Inspector (optionnel)
+    [Header("Configuration")]
+    [SerializeField] private string gameplaySceneName = "SampleScene";
 
     private void Awake()
     {
-        // Garder le contrôleur entre les scènes (un seul point d'entrée pour l'input Pause)
+        // Gestion singleton
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        _instance = this;
+
+        // Doit être à la racine pour DontDestroyOnLoad
+        if (transform.parent != null)
+            transform.SetParent(null);
+
         DontDestroyOnLoad(gameObject);
 
-        if (pauseManager == null)
-            pauseManager = PauseManager.Instance;
-    }
-
-    private void OnEnable()
-    {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-
-    private void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        // Réinitialiser au démarrage
+        IsGamePaused = false;
+        Time.timeScale = 1f;
     }
 
     private void OnDestroy()
     {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (_instance == this)
+            _instance = null;
     }
 
     private void Update()
     {
-        // Centralise l’input de pause ici (Escape / Start)
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            TogglePause();
+        // Seulement dans la scène de jeu
+        if (SceneManager.GetActiveScene().name != gameplaySceneName)
+            return;
 
-        if (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame)
+        // Détection des inputs
+        bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+        bool startPressed = Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame;
+
+        if (escapePressed || startPressed)
             TogglePause();
     }
 
     public void TogglePause()
     {
+        if (SceneManager.GetActiveScene().name != gameplaySceneName)
+            return;
+
         if (IsGamePaused)
             Resume();
         else
@@ -58,15 +74,15 @@ public class PauseController : MonoBehaviour
         IsGamePaused = true;
         Time.timeScale = 0f;
 
-        // Masquer UI de jeu principale si présent
-        if (UIManager.Instance != null)
-            UIManager.Instance.HideAllUI();
+        // Cacher l'UI principale
+        UIManager.Instance?.HideAllUI();
 
-        EnsurePauseManager();
+        // Afficher le menu pause via le PauseManager de la scène
+        var pauseManager = FindFirstObjectByType<PauseManager>();
         if (pauseManager != null)
-            pauseManager.PauseGame();
+            pauseManager.ShowPauseMenu();
         else
-            Debug.LogWarning("[PauseController] Pas de PauseManager trouvé pour afficher le menu pause.");
+            Debug.LogWarning("[PauseController] PauseManager non trouvé dans la scène!");
     }
 
     public void Resume()
@@ -76,41 +92,21 @@ public class PauseController : MonoBehaviour
         IsGamePaused = false;
         Time.timeScale = 1f;
 
-        EnsurePauseManager();
+        // Cacher le menu pause
+        var pauseManager = FindFirstObjectByType<PauseManager>();
         if (pauseManager != null)
-            pauseManager.ResumeGame();
+            pauseManager.HidePauseMenu();
+
+        // Réafficher l'UI principale
+        UIManager.Instance?.ShowMainUI();
     }
 
-    // Lorsqu'une nouvelle scène est chargée, restaurer l'état de pause si nécessaire
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    /// <summary>
+    /// Appelé avant de changer de scène (quitter, options, etc.)
+    /// </summary>
+    public static void ResetPauseState()
     {
-        // Retrouver PauseManager dans la nouvelle scène si l'instance a été recréée
-        pauseManager = PauseManager.Instance ?? FindFirstObjectByType<PauseManager>();
-
-        if (IsGamePaused)
-        {
-            // Si on est en pause, s'assurer que le timescale est à 0 et que le menu est visible
-            Time.timeScale = 0f;
-            if (UIManager.Instance != null)
-                UIManager.Instance.HideAllUI();
-
-            if (pauseManager != null)
-                pauseManager.PauseGame();
-            else
-                Debug.LogWarning("[PauseController] OnSceneLoaded : PauseManager introuvable alors que le jeu doit être en pause.");
-        }
-        else
-        {
-            // s'assurer d'être en run normal
-            Time.timeScale = 1f;
-            if (pauseManager != null)
-                pauseManager.ResumeGame();
-        }
-    }
-
-    private void EnsurePauseManager()
-    {
-        if (pauseManager == null)
-            pauseManager = PauseManager.Instance ?? FindFirstObjectByType<PauseManager>();
+        IsGamePaused = false;
+        Time.timeScale = 1f;
     }
 }

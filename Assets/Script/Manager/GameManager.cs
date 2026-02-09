@@ -304,15 +304,21 @@ public class GameManager : MonoBehaviour
     #endregion
     #region Time Management
 
+    private bool isProcessingHalfDay = false; 
+
     public void EndHalfDay()
     {
         if (campaignFinished) return;
-        RerollsRemaining = RerollMax;
-        var schedule = FindFirstObjectByType<ScheduleShow>();
-        if (schedule != null)
+        
+        if (isProcessingHalfDay)
         {
-            schedule.UpdateWeekText();
+            Debug.LogWarning("[GameManager] EndHalfDay déjà en cours, appel ignoré.");
+            return;
         }
+        
+        isProcessingHalfDay = true; 
+
+        RerollsRemaining = RerollMax;
 
         if (currentTime == DayTime.Matin)
         {
@@ -327,11 +333,12 @@ public class GameManager : MonoBehaviour
             StartCoroutine(EndDay());
         }
 
-        Debug.Log($"Ending half day: {currentTime} of day {currentDay} currentWeekDay = {currentWeekDay}");
+        Debug.Log($"[GameManager] EndHalfDay : {currentTime} du jour {currentDay} ({currentWeekDay})");
 
         if (currentDay > totalDays)
         {
             EndCampaign();
+            isProcessingHalfDay = false; // 🆕 Déverrouille
             return;
         }
 
@@ -340,24 +347,20 @@ public class GameManager : MonoBehaviour
             bool eventActive = eventScheduler.CheckAndTriggerEvent(currentDay, currentTime);
             if (eventActive)
             {
-                Debug.Log("Événement actif, gameplay normal en pause.");
+                Debug.Log("[GameManager] Événement actif, gameplay normal en pause.");
+                isProcessingHalfDay = false; // 🆕 Déverrouille
                 return;
             }
         }
 
         ChooseGameMode();
+        isProcessingHalfDay = false; // 🆕 Déverrouille
     }
 
     public IEnumerator EndDay()
-    {   
+    {
         yield return new WaitForSeconds(2.8f);
         if (campaignFinished) yield break;
-
-        var schedule = FindFirstObjectByType<ScheduleShow>();
-        if (schedule != null)
-        {
-            schedule.UpdateWeekText();
-        }
 
         currentWeekDay = weekDays[(currentDay - 1) % 7];
 
@@ -369,10 +372,10 @@ public class GameManager : MonoBehaviour
         else
         {
             changeStat(StatType.Human, -10);
-            changeStat(StatType.Food, -Valeurs[StatType.Food]);
+            changeStat(StatType.Food, -Valeurs[StatType.Food]); 
         }
 
-        Debug.Log($"Fin de journée : Perte de nourriture de {foodLoss}, Nourriture restante : {Valeurs[StatType.Food]}");
+        Debug.Log($"[GameManager] Fin de journée : Perte de nourriture de {foodLoss}, Nourriture restante : {Valeurs[StatType.Food]}");
 
         GameEvents.TriggerDayEnd();
 
