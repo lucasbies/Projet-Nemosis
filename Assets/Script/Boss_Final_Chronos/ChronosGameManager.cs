@@ -28,6 +28,10 @@ public class ChronosGameManager : MonoBehaviour
     public bool tutorialValidated = false;
     public int BossPhase => bossMaxHearts - bossCurrentHearts + 1;
 
+    [Header("Music")]
+    public AudioClip preCombatMusic;
+    public AudioClip bossMusic;
+
     [Header("HP Bar Sprites")]
     public Sprite hpFull;
     public Sprite hpHalf;
@@ -132,6 +136,13 @@ public class ChronosGameManager : MonoBehaviour
         bossCurrentHearts = bossMaxHearts;
         bossCurrentHP = bossHeartHP;
         UpdateUI();
+
+        // Jouer la musique pré-combat
+        if (preCombatMusic != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayLoopMusic(preCombatMusic);
+        }
+
         ShowTutorialAndStart();
         // si non validé, ne pas démarrer le combat
         if (!tutorialValidated) return;
@@ -235,6 +246,18 @@ public class ChronosGameManager : MonoBehaviour
             {
                 tutorialPanel.Hide();
                 tutorialValidated = true;
+
+                // Arrêter la musique pré-combat et lancer la musique du boss
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.StopLoopMusic();
+
+                    if (bossMusic != null)
+                    {
+                        AudioManager.Instance.PlayLoopMusic(bossMusic);
+                    }
+                }
+
                 StartBossFight(); // Votre méthode pour démarrer le combat
             });
         }
