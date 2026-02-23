@@ -22,6 +22,24 @@ public class ChronosAttackController : MonoBehaviour
     public float boneRainMinSpacing = 0.3f;
     public float boneRainSlowMultiplier = 1.6f;
 
+    [Header("Time Flux FX")]
+    [Tooltip("Son joué quand le temps RALENTIT (scale < 0.8).")]
+    public AudioClip timeSlowSfx;
+    [Tooltip("Son joué quand le temps ACCÉLÈRE (scale > 1.2).")]
+    public AudioClip timeFastSfx;
+    [Tooltip("Canvas plein écran utilisé comme vignette pour télégraphier les changements de temps. Optionnel.")]
+    public Canvas timeFluxVignette;
+    [Tooltip("Couleur de la vignette en ralentissement.")]
+    public Color slowColor = new Color(0.4f, 0.6f, 1f, 0.35f);
+    [Tooltip("Couleur de la vignette en accélération.")]
+    public Color fastColor = new Color(1f, 0.5f, 0.1f, 0.35f);
+    [Tooltip("Facteur de zoom caméra pour le ralenti (1 = pas de zoom).")]
+    public float slowZoomFactor = 0.9f;
+    [Tooltip("Facteur de zoom caméra pour l'accélération (1 = pas de zoom).")]
+    public float fastZoomFactor = 1.1f;
+    [Tooltip("Durée de la transition visuelle de flux temporel.")]
+    public float timeFluxFxTransition = 0.25f;
+
     // Cache
     private Transform player;
     private BoxCollider2D arenaBox;
@@ -33,6 +51,7 @@ public class ChronosAttackController : MonoBehaviour
     private Transform cachedTransform;
     private Camera mainCamera;
     private ObjectPooler pooler;
+    private float baseOrthoSize; // zoom de base caméra
 
     private bool hasPhase5Pattern;
     private Coroutine timeFluxCo;
@@ -57,6 +76,8 @@ public class ChronosAttackController : MonoBehaviour
     {
         cachedTransform = transform;
         mainCamera = Camera.main;
+        if (mainCamera != null)
+            baseOrthoSize = mainCamera.orthographicSize;
 
         // Pré-cache les WaitForSeconds
         wait1_5s = new WaitForSeconds(1.5f);
@@ -78,6 +99,12 @@ public class ChronosAttackController : MonoBehaviour
 
         if (healButton != null)
             healButton.gameObject.SetActive(false);
+
+        // Vignette à 0 au démarrage
+        if (timeFluxVignette != null)
+        {
+            timeFluxVignette.alpha = 0f;
+        }
     }
 
     void OnEnable()
@@ -529,9 +556,13 @@ public class ChronosAttackController : MonoBehaviour
             float transitionTime = Random.Range(0.12f, 0.35f);
             float holdTime = Random.Range(0.6f, 1.2f);
 
+            // Texte de feedback
             gm.dialogueText.text = scale < 0.8f ? "* Le temps ralentit..."
                                  : scale > 1.2f ? "* Le temps accélère !"
                                  : "* Le temps se stabilise.";
+
+            // Appliquer FX visuels + audio synchronisés
+            ApplyTimeFluxFx(scale, transitionTime);
 
             float t = 0;
             float startScale = Time.timeScale;
@@ -558,8 +589,27 @@ public class ChronosAttackController : MonoBehaviour
 
         gm.dialogueText.text = "* Le temps revient à la normale.";
 
+        // Retour visuel + temps à la normale
         float returnTime = 0;
         float fromScale = Time.timeScale;
+
+        // ramener caméra + vignette + texte
+        if (mainCamera != null)
+        {
+            mainCamera.DOOrthoSize(baseOrthoSize, timeFluxFxTransition)
+                      .SetUpdate(true);
+        }
+        if (timeFluxVignette != null)
+        {
+            timeFluxVignette.DOFade(0f, timeFluxFxTransition)
+                            .SetUpdate(true);
+        }
+        if (gm.dialogueText != null)
+        {
+            gm.dialogueText.color = Color.white;
+            gm.dialogueText.transform.DOKill();
+            gm.dialogueText.transform.localScale = Vector3.one;
+        }
 
         while (returnTime < 0.3f)
         {
@@ -571,6 +621,81 @@ public class ChronosAttackController : MonoBehaviour
         Time.timeScale = 1f;
         timeFluxCo = null;
     }
+
+    private void ApplyTimeFluxFx(float scale, float transitionTime)
+    {
+        // --- Audio : slow / fast ---
+        if (scale < 0.8f && timeSlowSfx != null)
+        {
+            if (ChronosGameManager.Instance != null && ChronosGameManager.Instance.sfxSource != null)
+                ChronosGameManager.Instance.sfxSource.PlayOneShot(timeSlowSfx);
+        }
+        else if (scale > 1.2f && timeFastSfx != null)
+        {
+            if (ChronosGameManager.Instance != null && ChronosGameManager.Instance.sfxSource != null)
+                ChronosGameManager.Instance.sfxSource.PlayOneShot(timeFastSfx);
+        }
+
+        // --- Caméra : zoom léger ---
+        if (mainCamera != null)
+        {
+            float targetSize = baseOrthoSize;
+            if (scale < 0.8f)
+                targetSize = baseOrthoSize * slowZoomFactor;
+            else if (scale > 1.2f)
+                targetSize = baseOrthoSize * fastZoomFactor;
+
+            mainCamera.DOOrthoSize(targetSize, timeFluxFxTransition)
+                      .SetEase(Ease.OutQuad)
+                      .SetUpdate(true); // utiliser l'unscaledTime
+        }
+
+        // --- Vignette écran ---
+        if (timeFluxVignette != null)
+        {
+            Color target = Color.clear;
+            if (scale < 0.8f)
+                target = slowColor;
+            else if (scale > 1.2f)
+                target = fastColor;
+
+            // on anime juste l'alpha/couleur
+            timeFluxVignette.DOKill();
+            timeFluxVignette.alpha = 0f;
+            // On triche : la couleur est portée par le Graphic, mais ici on se contente du fade alpha
+            timeFluxVignette.DOFade(target.a, timeFluxFxTransition)
+                            .SetUpdate(true);
+        }
+
+        // --- Texte de dialogue : couleur + scale / shake ---
+        if (gm != null && gm.dialogueText != null)
+        {
+            var txt = gm.dialogueText;
+            txt.transform.DOKill();
+
+            if (scale < 0.8f)
+            {
+                txt.color = new Color(0.6f, 0.8f, 1f);
+                txt.transform.localScale = Vector3.one * 0.9f;
+                txt.transform.DOScale(1.05f, timeFluxFxTransition)
+                              .SetEase(Ease.OutQuad)
+                              .SetUpdate(true);
+            }
+            else if (scale > 1.2f)
+            {
+                txt.color = new Color(1f, 0.6f, 0.4f);
+                txt.transform.localScale = Vector3.one;
+                txt.transform.DOShakePosition(0.25f, 8f, 15)
+                              .SetUpdate(true);
+            }
+            else
+            {
+                txt.color = Color.white;
+                txt.transform.localScale = Vector3.one;
+            }
+        }
+    }
+
     IEnumerator PatternTimeStopJustice()
     {
         if (!justiceController) yield break;

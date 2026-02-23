@@ -348,7 +348,7 @@ public class MiniGameTutorialPanel : MonoBehaviour
         {
             // Lane 0 = Gauche
             if (laneLabelsKeyboard.Length > 0 && laneLabelsKeyboard[0] != null)
-                laneLabelsKeyboard[0].text = "◄ Gauche";
+                laneLabelsKeyboard[0].text = "Gauche";
 
             if (currentKeyLabelsKeyboard.Length > 0 && currentKeyLabelsKeyboard[0] != null)
             {
@@ -364,7 +364,7 @@ public class MiniGameTutorialPanel : MonoBehaviour
 
             // Lane 1 = Droite
             if (laneLabelsKeyboard.Length > 1 && laneLabelsKeyboard[1] != null)
-                laneLabelsKeyboard[1].text = "Droite ►";
+                laneLabelsKeyboard[1].text = "Droite ";
 
             if (currentKeyLabelsKeyboard.Length > 1 && currentKeyLabelsKeyboard[1] != null)
             {
@@ -383,7 +383,7 @@ public class MiniGameTutorialPanel : MonoBehaviour
         {
             // Lane 0 = Gauche
             if (laneLabelsGamepad.Length > 0 && laneLabelsGamepad[0] != null)
-                laneLabelsGamepad[0].text = "◄ Gauche";
+                laneLabelsGamepad[0].text = "Gauche";
 
             if (currentKeyLabelsGamepad.Length > 0 && currentKeyLabelsGamepad[0] != null)
             {
@@ -399,7 +399,7 @@ public class MiniGameTutorialPanel : MonoBehaviour
 
             // Lane 1 = Droite
             if (laneLabelsGamepad.Length > 1 && laneLabelsGamepad[1] != null)
-                laneLabelsGamepad[1].text = "Droite ►";
+                laneLabelsGamepad[1].text = "Droite";
 
             if (currentKeyLabelsGamepad.Length > 1 && currentKeyLabelsGamepad[1] != null)
             {

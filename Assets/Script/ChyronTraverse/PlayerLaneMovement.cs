@@ -17,6 +17,10 @@ public class PlayerLaneMovement : MonoBehaviour
     // Durée de l'animation de turn (doit correspondre à la durée de l'anim dans l'Animator)
     public float turnAnimDuration = 0.25f;
 
+    [Header("SFX")]
+    [SerializeField] private AudioSource moveAudioSource;
+    [SerializeField] private AudioClip moveClip;
+
     private PlayerControls keyboardControls;
     private PlayerControls gamepadControls;
 
@@ -32,6 +36,10 @@ public class PlayerLaneMovement : MonoBehaviour
 
         gamepadControls.Gameplay.MoveLeft.performed += ctx => TryMoveLeft();
         gamepadControls.Gameplay.MoveRight.performed += ctx => TryMoveRight();
+
+        // Sécurité : si aucun AudioSource assigné, on essaie d'en trouver un sur l'objet
+        if (moveAudioSource == null)
+            moveAudioSource = GetComponent<AudioSource>();
     }
 
     private void OnEnable()
@@ -67,6 +75,10 @@ public class PlayerLaneMovement : MonoBehaviour
     private System.Collections.IEnumerator TurnAndMove(int direction)
     {
         isTurning = true;
+
+        // SFX de déplacement (au moment où le mouvement est accepté)
+        PlayMoveSfx();
+
         if (direction < 0)
             animator.SetTrigger("TurnLeft");
         else
@@ -82,5 +94,16 @@ public class PlayerLaneMovement : MonoBehaviour
     {
         targetPosition = new Vector3(laneIndex * laneOffset, transform.position.y, transform.position.z);
         transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * moveSpeed);
+    }
+
+    private void PlayMoveSfx()
+    {
+        if (moveAudioSource == null || moveClip == null) return;
+
+        // Légère variation pour éviter la répétition trop évidente
+        float oldPitch = moveAudioSource.pitch;
+        moveAudioSource.pitch = Random.Range(0.95f, 1.05f);
+        moveAudioSource.PlayOneShot(moveClip);
+        moveAudioSource.pitch = oldPitch;
     }
 }

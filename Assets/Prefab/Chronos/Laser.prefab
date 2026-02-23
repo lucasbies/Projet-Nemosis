@@ -60,7 +60,10 @@ MonoBehaviour:
   framesPerSecond: 8
   shieldHitSfx: {fileID: 8300000, guid: 3233b382a6ec72c47b477faace9d85f8, type: 3}
   playerHitSfx: {fileID: 8300000, guid: 37aa93aaba138f244a91d080317b80cc, type: 3}
-  sfxVolume: 1
+  sfxVolume: 3
+  chargeSfx: {fileID: 8300000, guid: a40281a994636c641a8f0420da0142ae, type: 3}
+  fireSfx: {fileID: 8300000, guid: 3b9aaf3d00baa7443b8268d5cb4fd53a, type: 3}
+  fireDelay: 3
   sfxSource: {fileID: 0}
   immediateDestroyOnLifeEnd: 1
   blockedEffectDuration: 3

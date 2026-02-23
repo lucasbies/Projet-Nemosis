@@ -157,9 +157,9 @@ public class TriGameManager : MonoBehaviour
         score += soulsCount * _baseScorePerSoul;
         uiManager.UpdateScore(score);
 
-        // animation du texte score — couleur bleue pour réussite + SFX
+        // animation du texte score — couleur bleue pour réussite
         PlayScorePop(Color.cyan);
-        if (sfxSource != null && sfxCorrect != null) sfxSource.PlayOneShot(sfxCorrect);
+
 
         // Paliers étoiles
         for (int i = 0; i < starThresholds.Length; i++)

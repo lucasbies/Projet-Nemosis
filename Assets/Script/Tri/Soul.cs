@@ -1,4 +1,4 @@
-﻿    using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public enum SoulType { Good, Neutral, Bad }
@@ -169,16 +169,25 @@ public class Soul : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         SortingZone zone = other.GetComponent<SortingZone>();
-        if (zone != null)
+        if (zone == null) return;
+
+        bool correct = zone.AcceptsSoul(type);
+
+        if (correct)
         {
-            bool correct = zone.AcceptsSoul(type);
+            TriGameManager.Instance.AddScore(1);
 
-            if (correct)
-                TriGameManager.Instance.AddScore(1);
-            else
-                TriGameManager.Instance.AddScore(-1);
-
-            Destroy(gameObject);
+            if (TriGameManager.Instance.sfxSource != null && TriGameManager.Instance.sfxCorrect != null)
+                TriGameManager.Instance.sfxSource.PlayOneShot(TriGameManager.Instance.sfxCorrect);
         }
+        else
+        {
+            TriGameManager.Instance.AddScore(-1);
+
+            if (TriGameManager.Instance.sfxSource != null && TriGameManager.Instance.sfxWrong != null)
+                TriGameManager.Instance.sfxSource.PlayOneShot(TriGameManager.Instance.sfxWrong);
+        }
+
+        Destroy(gameObject);
     }
 }

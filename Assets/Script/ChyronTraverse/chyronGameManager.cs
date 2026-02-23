@@ -29,6 +29,7 @@ public class chyronGameManager : MonoBehaviour
     [Header("SFX")]
     [SerializeField] private AudioSource sfxSource;
     [SerializeField] private AudioClip boatHitClip;
+    [SerializeField] private AudioClip bonusClip;   
 
     public bool isGameOver = false;
 
@@ -231,6 +232,16 @@ public class chyronGameManager : MonoBehaviour
     {
         if (sfxSource == null || boatHitClip == null) return;
         sfxSource.PlayOneShot(boatHitClip);
+    }
+
+    public void PlayBonusSfx()
+    {
+        if (sfxSource == null || bonusClip == null) return;
+
+        float oldPitch = sfxSource.pitch;
+        sfxSource.pitch = Random.Range(0.95f, 1.05f);
+        sfxSource.PlayOneShot(bonusClip);
+        sfxSource.pitch = oldPitch;
     }
 
     void GameOver()

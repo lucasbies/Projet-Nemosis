@@ -19,6 +19,11 @@ public class Laser : MonoBehaviour
     public AudioClip playerHitSfx;
     public float sfxVolume = 1f;
 
+    [Header("Laser SFX (charge / tir)")]
+    public AudioClip chargeSfx;   // son de charge
+    public AudioClip fireSfx;     // son de tir
+    public float fireDelay = 3f;
+
     [Header("Audio")]
     public AudioSource sfxSource;
 
@@ -31,7 +36,6 @@ public class Laser : MonoBehaviour
     [Tooltip("Amplitude de la pulsation d'échelle (ex : 0.12 = +-12%)")]
     public float blockedScaleAmplitude = 0.12f;
 
-    // Cache
     private SpriteRenderer spriteRenderer;
     private Coroutine spriteAnimCoroutine;
     private Coroutine blockedCoroutine;
@@ -193,6 +197,34 @@ public class Laser : MonoBehaviour
 
         // Pré-cache infos sprite (world length + pivot)
         CacheSpriteMetrics();
+
+        // NOUVEAU : séquence charge -> tir
+        StartCoroutine(PlayChargeAndFireSfx());
+    }
+
+    private IEnumerator PlayChargeAndFireSfx()
+    {
+        // Son de charge
+        if (chargeSfx != null)
+        {
+            if (sfxSource != null)
+                sfxSource.PlayOneShot(chargeSfx, sfxVolume);
+            else
+                SpawnOneShotAtPosition(chargeSfx, cachedTransform.position);
+        }
+
+        // Attendre le "temps de charge"
+        if (fireDelay > 0f)
+            yield return new WaitForSeconds(fireDelay);
+
+        // Son de tir
+        if (fireSfx != null)
+        {
+            if (sfxSource != null)
+                sfxSource.PlayOneShot(fireSfx, sfxVolume);
+            else
+                SpawnOneShotAtPosition(fireSfx, cachedTransform.position);
+        }
     }
 
     void CacheSpriteMetrics()

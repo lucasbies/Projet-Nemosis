@@ -18,6 +18,7 @@ public class ObstacleCollision : MonoBehaviour
         if (!col.CompareTag("Player")) return;
 
         var gm = FindFirstObjectByType<chyronGameManager>();
+        if (gm == null) return;
 
         switch (type)
         {
@@ -28,14 +29,17 @@ public class ObstacleCollision : MonoBehaviour
 
             case ObstacleType.Repair:
                 gm.HealPlayer(1);
+                gm.PlayBonusSfx();      
                 break;
 
             case ObstacleType.Shield:
                 gm.IncreaseMaxHealth(1);
+                gm.PlayBonusSfx();      
                 break;
 
             case ObstacleType.Coin:
                 gm.AddCoin(1);
+                gm.PlayBonusSfx();     
                 break;
         }
 
