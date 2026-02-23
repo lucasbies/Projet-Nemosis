@@ -8,10 +8,11 @@ public class Score : MonoBehaviour
 
     private string CireString;
     private string PlumeString;
+    public float scoreTime;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+       scoreTime = Time.time;
     }
 
     // Update is called once per frame
@@ -34,4 +35,6 @@ public class Score : MonoBehaviour
 
         ScoreText.text = CireString +" : " + Cire + "\n" + PlumeString + " : " + Plume;
     }
+
+
 }
