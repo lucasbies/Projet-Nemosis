@@ -65,6 +65,19 @@ public class ChronosAttackController : MonoBehaviour
         wait0_3s = new WaitForSeconds(0.3f);
         wait0_2s = new WaitForSeconds(0.2f);
         wait1s = new WaitForSeconds(1f);
+
+        // NOUVEAU : cacher l'UI de choix et le curseur tant qu'aucun joyau n'est récupéré
+        if (choiceCanvas != null)
+            choiceCanvas.gameObject.SetActive(false);
+
+        if (gamepadCursor != null)
+            gamepadCursor.SetActive(false);
+
+        if (attackButton != null)
+            attackButton.gameObject.SetActive(false);
+
+        if (healButton != null)
+            healButton.gameObject.SetActive(false);
     }
 
     void OnEnable()
@@ -625,22 +638,22 @@ public class ChronosAttackController : MonoBehaviour
 
             if (s == 0) // HAUT - spawn au-dessus du centre, descendre
             {
-                spawnPos = new Vector3(arenaCenter.x, arenaCenter.y + arenaSize.y * 0.5f + outsideOffset, 0f);
+                spawnPos = new Vector3(center.x, center.y + arenaSize.y * 0.5f + outsideOffset, 0f);
                 moveDir = Vector3.down;
             }
             else if (s == 1) // DROITE - spawn à droite du centre, aller à gauche
             {
-                spawnPos = new Vector3(arenaCenter.x + arenaSize.x * 0.5f + outsideOffset, arenaCenter.y, 0f);
+                spawnPos = new Vector3(center.x + arenaSize.x * 0.5f + outsideOffset, center.y, 0f);
                 moveDir = Vector3.left;
             }
             else if (s == 2) // BAS - spawn en-dessous du centre, monter
             {
-                spawnPos = new Vector3(arenaCenter.x, arenaCenter.y - arenaSize.y * 0.5f - outsideOffset, 0f);
+                spawnPos = new Vector3(center.x, center.y - arenaSize.y * 0.5f - outsideOffset, 0f);
                 moveDir = Vector3.up;
             }
             else // GAUCHE - spawn à gauche du centre, aller à droite
             {
-                spawnPos = new Vector3(arenaCenter.x - arenaSize.x * 0.5f - outsideOffset, arenaCenter.y, 0f);
+                spawnPos = new Vector3(center.x - arenaSize.x * 0.5f - outsideOffset, center.y, 0f);
                 moveDir = Vector3.right;
             }
 
@@ -675,7 +688,7 @@ public class ChronosAttackController : MonoBehaviour
                     Vector3 finalSpawnPos = spawnPos + offset;
 
                     // IMPORTANT : recalculer la direction pour viser le centre
-                    Vector3 finalMoveDir = (arenaCenter - finalSpawnPos).normalized;
+                    Vector3 finalMoveDir = (center - finalSpawnPos).normalized;
 
                     allSpawns.Add((finalSpawnPos, finalMoveDir, s));
                 }
@@ -705,7 +718,7 @@ public class ChronosAttackController : MonoBehaviour
         }
 
         // Spawner avec délai
-        WaitForSeconds spawnDelay = new WaitForSeconds(0.8f); // Ajustable
+        WaitForSeconds spawnDelay = new WaitForSeconds(0.8f);
 
         foreach (var spawn in orderedSpawns)
         {
@@ -755,16 +768,31 @@ public class ChronosAttackController : MonoBehaviour
         jewelTransform.localScale = Vector3.zero;
         jewelTransform.DOScale(0.3f, 0.3f).SetEase(Ease.OutBack);
 
+        // AFFICHER UI de choix + curseur manette
+        if (choiceCanvas != null)
+            choiceCanvas.gameObject.SetActive(true);
+
+        if (attackButton != null)
+            attackButton.gameObject.SetActive(true);
+        if (healButton != null)
+            healButton.gameObject.SetActive(true);
+
         if (gamepadCursor != null)
             gamepadCursor.SetActive(true);
-
-        choiceCanvas.gameObject.SetActive(true);
 
         bool done = false;
         attackButton.onClick.RemoveAllListeners();
         healButton.onClick.RemoveAllListeners();
-        attackButton.onClick.AddListener(() => { done = true; gm.Attack(); });
-        healButton.onClick.AddListener(() => { done = true; gm.Heal(); });
+        attackButton.onClick.AddListener(() =>
+        {
+            done = true;
+            gm.Attack();
+        });
+        healButton.onClick.AddListener(() =>
+        {
+            done = true;
+            gm.Heal();
+        });
 
         yield return new WaitUntil(() => done);
 
@@ -775,6 +803,18 @@ public class ChronosAttackController : MonoBehaviour
         {
             jewel.SetActive(false);
         });
+
+        // CACHER UI de choix + curseur après la décision
+        if (choiceCanvas != null)
+            choiceCanvas.gameObject.SetActive(false);
+
+        if (attackButton != null)
+            attackButton.gameObject.SetActive(false);
+        if (healButton != null)
+            healButton.gameObject.SetActive(false);
+
+        if (gamepadCursor != null)
+            gamepadCursor.SetActive(false);
     }
 
     // === HELPERS ===

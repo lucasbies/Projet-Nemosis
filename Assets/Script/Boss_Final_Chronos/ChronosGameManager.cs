@@ -48,7 +48,7 @@ public class ChronosGameManager : MonoBehaviour
     public Sprite heartFull;
 
     [Header("Boss Image (fade)")]
-    public Image bossImage; // <-- Référence à l'image du boss à placer dans l'inspecteur
+    public Image bossImage; 
 
     [Header("Boss Movement (infinite)")]
     public bool enableBossInfinityMovement = true;
@@ -129,13 +129,14 @@ public class ChronosGameManager : MonoBehaviour
 
     void Start()
     {
-
-
         heartRotateTweens = new Tween[bossMaxHearts];
         playerHP = playerMaxHP;
         bossCurrentHearts = bossMaxHearts;
         bossCurrentHP = bossHeartHP;
         UpdateUI();
+        //caché le curseur gamepad au début
+        if (gamepadCursor != null)
+            gamepadCursor.SetActive(false);
 
         // Jouer la musique pré-combat
         if (preCombatMusic != null && AudioManager.Instance != null)
@@ -268,12 +269,8 @@ public class ChronosGameManager : MonoBehaviour
         }
     }
 
-    // -----------------------------
-    // Nouvelle méthode pour démarrer le combat
-    // -----------------------------
     public void StartBossFight()
     {
-
         // Flag tutoriel
         tutorialValidated = true;
         isPausedForJewel = false;
@@ -283,6 +280,10 @@ public class ChronosGameManager : MonoBehaviour
         bossCurrentHearts = bossMaxHearts;
         bossCurrentHP = bossHeartHP;
         UpdateUI();
+
+        // NOUVEAU : S'assurer que le curseur est caché au début du combat
+        if (gamepadCursor != null)
+            gamepadCursor.SetActive(false);
 
         // Remettre le boss visible et actif
         enableBossInfinityMovement = true;
@@ -784,9 +785,6 @@ public class ChronosGameManager : MonoBehaviour
             playerHPText.text = $"{(hp < 0 ? playerHP : hp)} / {playerMaxHP}";
     }
 
-    // -----------------------------
-    // Nouvelle logique pour l'alpha du boss
-    // -----------------------------
     private int TotalBossHP => bossMaxHearts * bossHeartHP;
 
     private int GetRemainingBossHP()
@@ -821,9 +819,6 @@ public class ChronosGameManager : MonoBehaviour
         }
     }
 
-    // -----------------------------
-    // Mouvement infini + rémanence
-    // -----------------------------
     private void InitializeTrailPool()
     {
         if (bossImage == null) return;

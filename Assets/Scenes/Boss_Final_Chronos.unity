@@ -2050,6 +2050,8 @@ MonoBehaviour:
   tutorialPanel: {fileID: 1724789636}
   tutorialClip: {fileID: 0}
   tutorialValidated: 0
+  preCombatMusic: {fileID: 0}
+  bossMusic: {fileID: 8300000, guid: 33f4327123fed3648825f20507446a29, type: 3}
   hpFull: {fileID: 2251640791267300722, guid: f060ea8294524974e9aaa6a053984841, type: 3}
   hpHalf: {fileID: -1976226698344691927, guid: f060ea8294524974e9aaa6a053984841, type: 3}
   hpLow: {fileID: -4253177222419275081, guid: f060ea8294524974e9aaa6a053984841, type: 3}
@@ -2856,8 +2858,8 @@ MonoBehaviour:
   sfxParam: SFXVolume
   voiceParam: VoiceVolume
   enableDebugLogs: 0
-  musicAudioSource: {fileID: 0}
-  sfxAudioSource: {fileID: 0}
+  musicAudioSource: {fileID: 1601292831}
+  sfxAudioSource: {fileID: 470473095}
   voiceAudioSource: {fileID: 0}
 --- !u!4 &1538752618
 Transform:
