@@ -10727,6 +10727,8 @@ Transform:
   - {fileID: 959312664}
   - {fileID: 1520836697}
   - {fileID: 749579547}
+  - {fileID: 1923202620}
+  - {fileID: 1414051477}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &959312663
@@ -11581,11 +11583,11 @@ Transform:
   m_GameObject: {fileID: 1414051472}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 28, y: 0, z: 0}
+  m_LocalPosition: {x: 4.3565807, y: 2.07073, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 891384304}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1415192781
 GameObject:
@@ -23722,7 +23724,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d143f83adbc1a04086b4fd87c0ae6e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MinotaurAI
-  speed: 8.5
+  speed: 7.5
   gridSize: 2
   wallLayer:
     serializedVersion: 2
@@ -23997,11 +23999,11 @@ Transform:
   m_GameObject: {fileID: 1923202615}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 28, y: 1, z: 0}
+  m_LocalPosition: {x: 4.3565807, y: 3.07073, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 891384304}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1939032892
 GameObject:
@@ -24387,5 +24389,3 @@ SceneRoots:
   - {fileID: 663976409}
   - {fileID: 676067565}
   - {fileID: 1490173352}
-  - {fileID: 1923202620}
-  - {fileID: 1414051477}
