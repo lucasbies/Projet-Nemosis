@@ -3,21 +3,31 @@ using UnityEngine;
 public class FinalScore : MonoBehaviour
 {
     public TMPro.TextMeshProUGUI ScoreText;
-    public float scoreTime;
+
     public GameObject player;
+
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        scoreTime = 0;
-        ScoreText.text = "";
+    }
+
+    void Update()
+    {
+        if (player.GetComponent<PacmanMovement>().health <= 0)
+        {
+            ScoreText.text = "Tu es mort !";
+            Time.timeScale = 0f; // Arrête le temps pour figer le jeu
+        }
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {   
         if(other.gameObject == player)
         {
-            scoreTime = Time.time;
-            ScoreText.text = "Final Score : " + scoreTime.ToString("F2") + " seconds!";
+            ScoreText.text = "Score : " + player.GetComponent<PacmanMovement>().health;
+            Time.timeScale = 0f;
         }
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 public class PacmanMovement : MonoBehaviour
 {
@@ -22,14 +23,20 @@ public class PacmanMovement : MonoBehaviour
 
     private Rigidbody2D rb;
     private BoxCollider2D box;
+    private AudioSource audioSource;
 
     private Vector2 currentDirection = Vector2.zero; // Direction actuelle de déplacement
     private Vector2 queuedDirection = Vector2.zero;  // Direction demandée par le joueur (buffer)
+
+    public int health = 3;
+    public bool invincible = false;
+
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         box = GetComponent<BoxCollider2D>();
+        audioSource = GetComponent<AudioSource>();
 
         // Aligne Pacman sur la grille dès le départ
         Vector2 snapped = SnapToGrid(transform.position);
@@ -251,5 +258,23 @@ public class PacmanMovement : MonoBehaviour
     public Vector2 GetCurrentDirection()
     {
         return currentDirection;
+    }
+
+    public void StartInvincibility()
+    {
+        StartCoroutine(InvincibilityCoroutine());
+    }
+
+    private IEnumerator InvincibilityCoroutine()
+    {
+        invincible = true;
+        speed += 3f;
+        if (audioSource != null)
+            audioSource.Play();
+        yield return new WaitForSeconds(3);
+        if (audioSource != null)
+            audioSource.Stop();
+        speed -= 3f;
+        invincible = false;
     }
 }

@@ -23,7 +23,8 @@ public class MinotaurAI : MonoBehaviour
     private Vector2 nextWaypoint;
     private bool hasTarget = false;
     private float behaviorTimer = 0f;
-    
+
+    public GameObject Player;
     private readonly Vector2[] possibleDirections = new Vector2[]
     {
         Vector2.up,
@@ -221,19 +222,12 @@ public class MinotaurAI : MonoBehaviour
     
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
+
+        if (other.CompareTag("Player") && other.GetComponent<PacmanMovement>().invincible == false)
         {
-            if (currentBehavior == GhostBehavior.Frightened)
-            {
-                rb.position = SnapToGrid(rb.position);
-                currentBehavior = GhostBehavior.Chase;
-                hasTarget = false;
-                Debug.Log("Minotaure mangé! Retour en mode Chase");
-            }
-            else
-            {
-                Debug.Log("Pacman attrapé par le Minotaure!");
-            }
+            Player.GetComponent<PacmanMovement>().StartInvincibility();
+            Player.GetComponent<PacmanMovement>().health -= 1;
+            Debug.Log("Pacman attrapé par le Minotaure!");
         }
     }
     
