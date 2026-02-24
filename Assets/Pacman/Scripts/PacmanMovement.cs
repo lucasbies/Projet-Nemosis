@@ -271,6 +271,25 @@ public class PacmanMovement : MonoBehaviour
         speed += 3f;
         if (audioSource != null)
             audioSource.Play();
+
+        //Clignotement de Pacman pour indiquer l'invincibilité
+        if (health > 0)
+        {
+            SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+            float blinkDuration = 0.08f; // Durée de chaque clignotement
+            float elapsedTime = 0f;
+            while (true)
+            {
+                elapsedTime += blinkDuration;
+                spriteRenderer.enabled = !spriteRenderer.enabled; // Alterne la visibilité du sprite
+                if (elapsedTime >= 3f) // Arrête le clignotement après 3 secondes
+                {
+                    spriteRenderer.enabled = true; // Assure que le sprite est visible à la fin
+                    break;
+                }
+                yield return new WaitForSeconds(blinkDuration);
+            }
+        }
         yield return new WaitForSeconds(3);
         if (audioSource != null)
             audioSource.Stop();

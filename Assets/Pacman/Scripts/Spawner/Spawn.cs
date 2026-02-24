@@ -34,6 +34,7 @@ public class Spawn : MonoBehaviour
     }
     IEnumerator SpawnDelay() {
         toSpawn = feather; // Juste pour éviter de relancer plusieurs fois la coroutine
+        GetComponent<AudioSource>().Play();
         yield return new WaitForSeconds(Random.Range(1f, 2f));
         SpawnItem();
     }

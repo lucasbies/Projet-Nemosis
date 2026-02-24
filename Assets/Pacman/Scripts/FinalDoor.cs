@@ -1,11 +1,13 @@
-using UnityEngine;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.Audio;
 
 public class FinalDoor : MonoBehaviour
 {
 
     public float openHeight = 0f;
     public GameObject Score;
+    private bool hasStartedOpening = false;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -17,9 +19,14 @@ public class FinalDoor : MonoBehaviour
     {
         if(Score.GetComponent<Score>().Cire + Score.GetComponent<Score>().Plume >= 5)
         {
-            transform.position += new Vector3(0, openHeight * Time.deltaTime, 0);
-            StartCoroutine(SpawnDelay());
+            if (!hasStartedOpening)
+            {
+                hasStartedOpening = true;
+                GetComponent<AudioSource>().Play();
+                StartCoroutine(SpawnDelay());
+            }
 
+            transform.position += new Vector3(0, openHeight * Time.deltaTime, 0);
         }
     }
 

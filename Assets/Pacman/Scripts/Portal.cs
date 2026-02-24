@@ -23,6 +23,7 @@ public class Portal : MonoBehaviour
     {
         if(collision.gameObject.CompareTag("Player"))
         {
+            GetComponent<AudioSource>().Play();
             collision.transform.position = linkedPortal.transform.position + new Vector3(0, teleportDecalage, 0); // Impossible si c'est si simple lol 
         }
     }

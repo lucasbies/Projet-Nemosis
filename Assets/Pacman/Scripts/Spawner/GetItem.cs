@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class GetItem : MonoBehaviour
 {
@@ -7,7 +8,7 @@ public class GetItem : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
@@ -17,6 +18,7 @@ public class GetItem : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
+
         if(collision.gameObject.tag == "Player")
         {
             if(gameObject.tag == "Wax")
@@ -26,7 +28,9 @@ public class GetItem : MonoBehaviour
             else if(gameObject.tag == "Feather")
             {
                 Score.GetComponent<Score>().Plume += 1;
+
             }
+
             Destroy(this.gameObject);
         }
     }

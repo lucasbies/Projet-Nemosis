@@ -25,6 +25,10 @@ public class MinotaurAI : MonoBehaviour
     private float behaviorTimer = 0f;
 
     public GameObject Player;
+
+
+
+
     private readonly Vector2[] possibleDirections = new Vector2[]
     {
         Vector2.up,
