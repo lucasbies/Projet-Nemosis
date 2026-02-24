@@ -353,6 +353,7 @@ public class VillageManager : MonoBehaviour
             var effect = effectSO.CreateInstance();
             if (effect != null)
             {
+                effect.SourceBuilding = buildingData; // Lie l'effet au bâtiment
                 PassiveManager.Instance.AddEffect(effect);
                 effect.CheckConditions();
                 effects.Add(effect);
@@ -435,14 +436,12 @@ public class VillageManager : MonoBehaviour
     // Overload pour Building2D
     public void OnBuildingHovered(Building2D building)
     {
-        Debug.Log($"[VillageManager] OnBuildingHovered called for {building.GetData().buildingName}");
         UIManager.Instance.tooltipPanel.SetActive(true);
         UIManager.Instance.ShowBuildingTooltip(building.GetData());
     }
 
     public void OnBuildingClicked(Building2D building)
     {
-        Debug.Log($"[VillageManager] OnBuildingClicked called for {building.GetData().buildingName}");
         buildingClicked = building.GetData();
         UIManager.Instance.ShowInteractionMenu(building.GetData());
     }

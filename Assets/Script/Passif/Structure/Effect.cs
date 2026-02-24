@@ -11,6 +11,9 @@ public abstract class Effect
     private bool OnchechConditions = false;
     protected List<Condition> conditions = new List<Condition>();
 
+    // Référence au bâtiment source (si l'effet vient d'un bâtiment)
+    public BuildingData SourceBuilding { get; set; }
+
     public bool IsInstant => data.isInstant;
 
     public Effect(EffectSO data)
