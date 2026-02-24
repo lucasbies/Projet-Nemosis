@@ -49,18 +49,28 @@ public class House : MonoBehaviour
 
     public void SetState(bool on)
     {
+        // Si aucun changement, on ne fait rien
         if (isOn == on)
             return;
 
-        // Jouer le son approprié
-        if (audioSource != null)
+        bool wasOn = isOn;
+        isOn = on;
+
+        // Met à jour le visuel AVANT le son si besoin
+        UpdateVisual();
+
+        // Si on est en phase d'invincibilité (reset des maisons), on ne joue pas les SFX
+        bool sfxAllowed = NuitGlacialeGameManager.Instance == null
+                          || !NuitGlacialeGameManager.Instance.IsExtinguishProtected;
+
+        if (sfxAllowed && audioSource != null)
         {
-            if (on && turnOnSfx != null)
+            if (!wasOn && on && turnOnSfx != null) // OFF -> ON
             {
                 audioSource.pitch = Random.Range(0.95f, 1.05f);
                 audioSource.PlayOneShot(turnOnSfx);
             }
-            else if (!on && turnOffSfx != null)
+            else if (wasOn && !on && turnOffSfx != null) // ON -> OFF
             {
                 audioSource.pitch = Random.Range(0.9f, 1.1f);
                 audioSource.PlayOneShot(turnOffSfx);
@@ -68,13 +78,10 @@ public class House : MonoBehaviour
         }
 
         // si on passe de ON à OFF, prévenir le GameManager
-        if (isOn && !on && NuitGlacialeGameManager.Instance != null)
+        if (wasOn && !on && NuitGlacialeGameManager.Instance != null)
         {
             NuitGlacialeGameManager.Instance.OnHouseTurnedOff(this);
         }
-
-        isOn = on;
-        UpdateVisual();
     }
 
     void UpdateVisual()

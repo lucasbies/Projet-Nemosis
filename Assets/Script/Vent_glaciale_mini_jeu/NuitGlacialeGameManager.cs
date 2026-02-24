@@ -18,6 +18,10 @@ public class NuitGlacialeGameManager : MonoBehaviour
     public float duration = 60f;
     public float interval = 3f;
     public float intervalDecrease = 0.9f; // Accélération progressive
+    private bool _isExtinguishProtected = false; // empêche les maisons de s'éteindre pendant un délai
+
+    // Propriété en lecture seule pour les autres scripts (House, etc.)
+    public bool IsExtinguishProtected => _isExtinguishProtected;
 
     [Header("Génération de maisons")]
     public GameObject housePrefab;
@@ -40,25 +44,39 @@ public class NuitGlacialeGameManager : MonoBehaviour
     [Header("Tutoriel")]
     public MiniGameTutorialPanel tutorialPanel; // à assigner dans l'inspector
     public VideoClip tutorialClip; // à assigner dans l'inspector
-    private bool tutorialValidated = false; // Ajouté
+    private bool tutorialValidated = false;
     public bool StartPlaying;
 
-
-    [Header("Paliers étoiles")]
-    public int[] starThresholds = new int[3] { 10, 20, 30 };
-    private bool[] starGiven = new bool[3];
-    [Header("UI Étoiles")]
-    public UnityEngine.UI.Image[] starImages;
+    [Header("UI Étoiles (vies & récompenses)")]
+    public UnityEngine.UI.Image[] starImages;  // 3 images d'étoiles
     public Sprite starOnSprite;
     public Sprite starOffSprite;
 
+    // --- VIES : commence toujours à 3 ---
+    private int lifeCount = 3;
+
+    [Header("FX visuels")]
+    [Tooltip("Image plein écran noire pour assombrir en fonction des maisons éteintes")]
+    public UnityEngine.UI.Image darknessOverlay;
+    [Tooltip("Image plein écran (bleu, blanc, etc.) pour indiquer l'invincibilité")]
+    public UnityEngine.UI.Image invincibilityOverlay;
+
+    private Coroutine invincibilityFxCoroutine;
 
     void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-        starGiven = new bool[3];
+
+        lifeCount = 3;
         UpdateStarsUI();
+
+        if (darknessOverlay != null)
+        {
+            var c = darknessOverlay.color;
+            c.a = 0f;
+            darknessOverlay.color = c;
+        }
     }
 
     void Start()
@@ -85,7 +103,6 @@ public class NuitGlacialeGameManager : MonoBehaviour
         duration = _baseDuration / diffMult;         // plus dur => moins de temps
         intervalDecrease = Mathf.Lerp(1f, _baseIntervalDecrease, diffMult); // accélération plus forte
 
-        // --- nouveau : une erreur = défaite ---
         _oneMistakeFail = card.oneMistakeFail;
 
         Debug.Log($"[NuitGlaciale] Carte appliquée : {card.cardName}, duration={duration}, intervalDecrease={intervalDecrease}, oneMistakeFail={_oneMistakeFail}");
@@ -123,11 +140,14 @@ public class NuitGlacialeGameManager : MonoBehaviour
             return;
         }
 
-        // Si le jeu est démarré manuellement, on considère le tutoriel validé
         tutorialValidated = true;
 
         timeLeft = duration;
         isRunning = true;
+
+        // Reset des vies au début de la partie
+        lifeCount = 3;
+        UpdateStarsUI();
 
         foreach (var h in houses)
         {
@@ -145,9 +165,9 @@ public class NuitGlacialeGameManager : MonoBehaviour
             tutorialPanel.ShowSimple(
                 "Nuit Glaciale",
                 tutorialClip,
-                " Conseil : Cliquez  ou appuyé sur A ou X (selon la manette) pour rallumer les maison éteinte. " +
-                "Si plus de la moitié des maisons s'éteignent vous pedrez. " +
-                "De plus plusieurs maisons peuvent s'éteindre en même temps!"
+                "Conseil : Cliquez ou appuyez sur A ou X (selon la manette) pour rallumer les maisons éteintes.\n" +
+                "Si plus de la moitié des maisons s'éteignent, vous perdez une étoile-vie.\n" +
+                "Si vous perdez les 3 étoiles, la partie est terminée."
             );
 
             tutorialPanel.continueButton.onClick.RemoveAllListeners();
@@ -174,15 +194,8 @@ public class NuitGlacialeGameManager : MonoBehaviour
             return;
 
         if (!isRunning) return;
-        for (int i = 0; i < starThresholds.Length; i++)
-        {
-            if (!starGiven[i] && timeLeft >= starThresholds[i])
-            {
-                starGiven[i] = true;
-                if (GameManager.Instance != null)
-                    GameManager.Instance.changeStat(StatType.Foi, 5f);
-            }
-        }
+
+        // Timer = uniquement temps restant à survivre
         timeLeft -= Time.deltaTime;
         if (timeLeft <= 0)
         {
@@ -199,24 +212,45 @@ public class NuitGlacialeGameManager : MonoBehaviour
             foreach (var h in houses)
                 if (h != null && !h.isOn) offCount++;
         }
+        UpdateDarknessFX(offCount);
 
-        // Nouvelle logique pour le max de maisons éteintes
-        int maxAllowedOff;
-        if (houses != null && houses.Length % 2 == 0)
-            maxAllowedOff = (houses.Length / 2) - 1;
-        else
-            maxAllowedOff = Mathf.CeilToInt((houses != null && houses.Length > 0 ? houses.Length : minHouses) / 2f);
+        // Max de maisons éteintes autorisées avant perte de vie
+        // On veut perdre une étoile quand STRICTEMENT PLUS de la moitié sont éteintes
+        int totalHouses = houses != null && houses.Length > 0 ? houses.Length : minHouses;
+        int maxAllowedOff = totalHouses / 2; // moitié entière inférieure
 
-        if (offCount >= maxAllowedOff)
-            Lose();
+        // Si offCount > maxAllowedOff, on a dépassé la moitié (moitié + 1 ou plus)
+        if (offCount > maxAllowedOff)
+        {
+            if (HasAnyStarLeft())
+            {
+                Debug.Log("[NuitGlaciale] Trop de maisons éteintes, mais il reste des étoiles → reset des maisons et -1 étoile.");
+                StartCoroutine(HandleLifeReset());
+            }
+            else
+            {
+                // plus de vie → défaite immédiate
+                Lose();
+            }
+        }
+
         UpdateStarsUI();
-
     }
+
+    // Met à jour l'affichage des 3 vies
     public void UpdateStarsUI()
     {
+        if (starImages == null) return;
+
         for (int i = 0; i < starImages.Length; i++)
-            starImages[i].sprite = starGiven[i] ? starOnSprite : starOffSprite;
+        {
+            if (starImages[i] == null) continue;
+
+            bool on = i < lifeCount;
+            starImages[i].sprite = on ? starOnSprite : starOffSprite;
+        }
     }
+
     IEnumerator HouseFailures()
     {
         float currentInterval = interval;
@@ -226,14 +260,15 @@ public class NuitGlacialeGameManager : MonoBehaviour
         {
             float wait = Random.Range(currentInterval * 0.5f, currentInterval * 1.5f);
 
-            // On attend le plus long entre le wait normal et le temps restant pour atteindre 2s mini
             float timeSinceLast = Time.time - lastExtinguishTime;
             float minWait = Mathf.Max(0f, 2f - timeSinceLast);
             float finalWait = Mathf.Max(wait, minWait);
 
             yield return new WaitForSeconds(finalWait);
 
-            // combien de maisons sont allumées
+            if (_isExtinguishProtected)
+                continue;
+
             int onCount = 0;
             if (houses != null)
             {
@@ -241,7 +276,7 @@ public class NuitGlacialeGameManager : MonoBehaviour
                     if (h != null && h.isOn) onCount++;
             }
 
-            int maxExtinguishable = Mathf.FloorToInt(onCount / 2f);
+            int maxExtinguishable = Mathf.FloorToInt(onCount / 2f) - 1;
             if (maxExtinguishable < 1)
                 maxExtinguishable = 1;
 
@@ -254,14 +289,13 @@ public class NuitGlacialeGameManager : MonoBehaviour
                     house.SetState(false);
             }
 
-            lastExtinguishTime = Time.time; // on note le moment de l’extinction
+            lastExtinguishTime = Time.time;
 
             currentInterval *= intervalDecrease;
             currentInterval = Mathf.Max(0.5f, currentInterval);
         }
     }
 
-    // --- appelé par House quand elle passe de ON à OFF ---
     public void OnHouseTurnedOff(House house)
     {
         if (!isRunning) return;
@@ -275,7 +309,6 @@ public class NuitGlacialeGameManager : MonoBehaviour
 
     IEnumerator SpawnAnimation(GameObject obj)
     {
-        // Protection : si l'objet a déjà été détruit ou non assigné, on sort.
         if (obj == null)
             yield break;
 
@@ -285,21 +318,17 @@ public class NuitGlacialeGameManager : MonoBehaviour
         Vector3 initialScale = Vector3.zero;
         Vector3 targetScale = Vector3.one;
 
-        // Sauvegarder la référence Transform (non nécessaire mais évite plusieurs .transform calls)
         Transform t = obj.transform;
         if (t == null)
             yield break;
 
-        // Initialisation sécurisée
         t.localScale = initialScale;
 
         while (elapsed < duration)
         {
-            // L'objet peut être détruit pendant la coroutine ; sortir proprement si c'est le cas.
             if (obj == null)
                 yield break;
 
-            // Re-obtenir le Transform au cas où l'objet ait été renommé/reparenté (sécurisé)
             t = obj.transform;
             t.localScale = Vector3.Lerp(initialScale, targetScale, elapsed / duration);
             elapsed += Time.deltaTime;
@@ -338,7 +367,6 @@ public class NuitGlacialeGameManager : MonoBehaviour
 
         int houseCount = Random.Range(minHouses, maxHouses + 1);
 
-        // Supprimer anciennes maisons
         foreach (Transform child in housesParent)
             Destroy(child.gameObject);
 
@@ -361,7 +389,6 @@ public class NuitGlacialeGameManager : MonoBehaviour
                 float y = Random.Range(minY + 0.5f, maxY - 0.5f);
                 pos = new Vector3(x, y, 0f);
 
-                // Vérifier collisions
                 validPos = true;
                 foreach (var col in existingColliders)
                 {
@@ -377,14 +404,11 @@ public class NuitGlacialeGameManager : MonoBehaviour
 
             h.transform.position = pos;
 
-            // Ajouter le collider à la liste pour les futures vérifications
             existingColliders.Add(bc);
 
-            // Activer le script si jamais désactivé
             var houseCmp = h.GetComponent<House>();
             if (houseCmp != null) houseCmp.enabled = true;
 
-            // Démarrer l’animation de spawn (sécurisé : la coroutine vérifie si l'objet est détruit)
             StartCoroutine(SpawnAnimation(h));
         }
     }
@@ -408,6 +432,11 @@ public class NuitGlacialeGameManager : MonoBehaviour
         Debug.Log("Victoire : tu as tenu la nuit !");
         isRunning = false;
         StopAllCoroutines();
+
+        // ICI tu peux donner les récompenses selon lifeCount (exemple) :
+        // if (GameManager.Instance != null)
+        //     GameManager.Instance.changeStat(StatType.Foi, lifeCount * 5f);
+
         UIManagerNuit.Instance.ShowWin();
         SceneManager.LoadScene("SampleScene");
     }
@@ -424,5 +453,111 @@ public class NuitGlacialeGameManager : MonoBehaviour
     public void OnQuitMiniGame()
     {
         SceneManager.LoadScene("SampleScene");
+    }
+
+    private bool HasAnyStarLeft()
+    {
+        return lifeCount > 0;
+    }
+
+    private bool ConsumeOneStar()
+    {
+        if (lifeCount <= 0)
+            return false;
+
+        lifeCount--;
+        UpdateStarsUI();
+        return true;
+    }
+
+    private IEnumerator HandleLifeReset()
+    {
+        if (_isExtinguishProtected)
+            yield break;
+
+        _isExtinguishProtected = true;
+
+        bool consumed = ConsumeOneStar();
+        if (!consumed)
+        {
+            Lose();
+            yield break;
+        }
+
+        if (houses != null)
+        {
+            foreach (var h in houses)
+            {
+                if (h != null)
+                    h.SetState(true);
+            }
+        }
+
+        float protectionDuration = Random.Range(3f, 7f);
+
+        // Lancer l'effet visuel d'invincibilité
+        if (invincibilityFxCoroutine != null)
+            StopCoroutine(invincibilityFxCoroutine);
+        invincibilityFxCoroutine = StartCoroutine(InvincibilityFxRoutine(protectionDuration));
+
+        yield return new WaitForSeconds(protectionDuration);
+
+        _isExtinguishProtected = false;
+
+        // On coupe l'overlay si la coroutine n'a pas déjà fini
+        if (invincibilityOverlay != null)
+        {
+            Color c = invincibilityOverlay.color;
+            c.a = 0f;
+            invincibilityOverlay.color = c;
+        }
+    }
+
+    private void UpdateDarknessFX(int offCount)
+    {
+        if (darknessOverlay == null || houses == null || houses.Length == 0)
+            return;
+
+        int total = houses.Length;
+        float ratioOff = Mathf.Clamp01((float)offCount / total);
+
+        // alpha max quand toutes les maisons sont éteintes (par ex. 0.6)
+        float maxAlpha = 0.6f;
+        float alpha = ratioOff * maxAlpha;
+
+        Color c = darknessOverlay.color;
+        c.a = alpha;
+        darknessOverlay.color = c;
+    }
+
+    private IEnumerator InvincibilityFxRoutine(float duration)
+    {
+        if (invincibilityOverlay == null)
+            yield break;
+
+        float elapsed = 0f;
+        // couleur de base
+        Color baseColor = invincibilityOverlay.color;
+        baseColor.a = 0.35f; // alpha moyen
+        invincibilityOverlay.color = baseColor;
+
+        // petit clignotement d'alpha entre 0.2 et 0.45
+        while (elapsed < duration && _isExtinguishProtected)
+        {
+            float t = Mathf.PingPong(Time.time * 2f, 1f); // 0..1
+            float alpha = Mathf.Lerp(0.2f, 0.45f, t);
+            Color c = baseColor;
+            c.a = alpha;
+            invincibilityOverlay.color = c;
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // fin de l'invincibilité visuelle
+        Color end = invincibilityOverlay.color;
+        end.a = 0f;
+        invincibilityOverlay.color = end;
+        invincibilityFxCoroutine = null;
     }
 }
