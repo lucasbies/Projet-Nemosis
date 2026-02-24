@@ -12,12 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0e2127f56410ba469ad784dd6c84da3, type: 3}
   m_Name: Marche
   m_EditorClassIdentifier: Assembly-CSharp::BuildingData
-  buildingName: 
-  description: 
+  buildingName: le marche
+  description: "Ehange de bon proced\xE9"
   visualType: 0
-  icon: {fileID: 0}
+  icon: {fileID: -4614930303757976729, guid: 3a99405248b1cd5429c0484093306a43, type: 3}
   animationSprites: []
   animationFPS: 12
   gridSize: 2
-  passiveEffects: []
-  interactionEffects: []
+  passiveEffects:
+  - {fileID: 11400000, guid: 680eff1862532114185e6f097020f6bc, type: 2}
+  interactionEffects:
+  - {fileID: 11400000, guid: f8f87648705285d428b60962a0ed41c5, type: 2}

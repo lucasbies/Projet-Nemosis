@@ -13,7 +13,11 @@ MonoBehaviour:
   m_Name: TESTRandomEffect
   m_EditorClassIdentifier: Assembly-CSharp::RandomEffectSO
   effectName: Test random
-  description: 
+  description: Aleatoire
   isInstant: 0
   conditions: []
-  possibleEffects: []
+  possibleEffects:
+  - {fileID: 11400000, guid: f8f87648705285d428b60962a0ed41c5, type: 2}
+  - {fileID: 11400000, guid: 9b42ca5b7ac9b24428aa24199868a00e, type: 2}
+  - {fileID: 11400000, guid: 753c277ba9d053f41ba498202bd888d4, type: 2}
+  - {fileID: 11400000, guid: a2fdbea658a167541b16b8b3f2fece5b, type: 2}

@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06324efcc7d956c46a9b26bfb8d54320, type: 3}
   m_Name: Ajoute foi
   m_EditorClassIdentifier: Assembly-CSharp::AddRessourceEffectSO
-  effectName: Food
-  description: J'ajoute de la food
+  effectName: FOi
+  description: J'ajoute de la foi
   isInstant: 0
   conditions: []
   RessourceToAdd:
-  - statType: 1
+  - statType: 0
     amount: 20

@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbe74286fd7f49a49a1ae22d573fc819, type: 3}
   m_Name: Create Marche
   m_EditorClassIdentifier: Assembly-CSharp::CreateBatimentsEffectSO
-  effectName: 
-  description: 
+  effectName: 'Cree le marche '
+  description: Effet
   isInstant: 0
-  conditions: []
-  buildingData: {fileID: 0}
+  conditions:
+  - {fileID: 11400000, guid: 042b1fdc64c572d48a173f0dd947a975, type: 2}
+  buildingData: {fileID: 11400000, guid: aa14c189c3564374daf08f07d0400a5a, type: 2}

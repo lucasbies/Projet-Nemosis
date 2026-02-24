@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32cce503e5bba274db272de21d9c6f3c, type: 3}
   m_Name: Check 20 or
   m_EditorClassIdentifier: Assembly-CSharp::StatLevelCheckConditionSO
-  conditionName: 
-  statType: 0
-  requiredLevel: 0
-  plusQue: 0
+  conditionName: Plus que 20 or
+  statType: 3
+  requiredLevel: 20
+  plusQue: 1
   autoDestruct: 0

@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11dd4889239fdd3478083862a08848b8, type: 3}
   m_Name: Cree le marche
   m_EditorClassIdentifier: Assembly-CSharp::VillageCard
-  cardName: 
+  cardName: 'Marche du dimanceh '
   icon: {fileID: 0}
-  description: 
-  cardSet: 0
-  effectSO: {fileID: 0}
+  description: 'Cree un marche contre un peu d''or '
+  cardSet: 1
+  effectSO: {fileID: 11400000, guid: 3bceba1bf5a1ace45ac6c76817b800e8, type: 2}
