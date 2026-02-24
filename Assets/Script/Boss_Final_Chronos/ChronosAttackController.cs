@@ -28,7 +28,7 @@ public class ChronosAttackController : MonoBehaviour
     [Tooltip("Son joué quand le temps ACCÉLÈRE (scale > 1.2).")]
     public AudioClip timeFastSfx;
     [Tooltip("Canvas plein écran utilisé comme vignette pour télégraphier les changements de temps. Optionnel.")]
-    public Canvas timeFluxVignette;
+    public CanvasGroup timeFluxVignette;
     [Tooltip("Couleur de la vignette en ralentissement.")]
     public Color slowColor = new Color(0.4f, 0.6f, 1f, 0.35f);
     [Tooltip("Couleur de la vignette en accélération.")]
@@ -39,6 +39,10 @@ public class ChronosAttackController : MonoBehaviour
     public float fastZoomFactor = 1.1f;
     [Tooltip("Durée de la transition visuelle de flux temporel.")]
     public float timeFluxFxTransition = 0.25f;
+
+    [Header("Jewel SFX")]
+    [Tooltip("Son joué quand le joueur récupère / utilise le joyau.")]
+    public AudioClip jewelPickupSfx;
 
     // Cache
     private Transform player;
@@ -874,9 +878,18 @@ public class ChronosAttackController : MonoBehaviour
 
     IEnumerator SpawnJewelAndWaitChoice()
     {
+        // IMPORTANT : réinitialiser le flag AVANT de spawner le joyau
+        gm.isPausedForJewel = false;
+
         float x = Random.Range(arenaCenter.x - arenaSize.x / 2f, arenaCenter.x + arenaSize.x / 2f);
         float y = Random.Range(arenaCenter.y - arenaSize.y / 2f, arenaCenter.y + arenaSize.y / 2f);
         GameObject jewel = Spawn("Jewel", new Vector3(x, y, 0), Quaternion.identity);
+
+        // SFX : apparition du joyau
+        if (jewelPickupSfx != null && ChronosGameManager.Instance != null && ChronosGameManager.Instance.sfxSource != null)
+        {
+            ChronosGameManager.Instance.sfxSource.PlayOneShot(jewelPickupSfx);
+        }
 
         Transform jewelTransform = jewel.transform;
 
@@ -893,7 +906,14 @@ public class ChronosAttackController : MonoBehaviour
         jewelTransform.localScale = Vector3.zero;
         jewelTransform.DOScale(0.3f, 0.3f).SetEase(Ease.OutBack);
 
-        // AFFICHER UI de choix + curseur manette
+        // ATTENDRE que le joueur récupère le joyau (isPausedForJewel passe à true via OnJewelCollected)
+        yield return new WaitUntil(() => gm.isPausedForJewel);
+
+        // Arrêter les tweens du joyau (au cas où il serait encore actif)
+        floatTween.Kill();
+        rotateTween.Kill();
+
+        // AFFICHER UI de choix + curseur manette APRÈS la collecte
         if (choiceCanvas != null)
             choiceCanvas.gameObject.SetActive(true);
 
@@ -921,9 +941,6 @@ public class ChronosAttackController : MonoBehaviour
 
         yield return new WaitUntil(() => done);
 
-        floatTween.Kill();
-        rotateTween.Kill();
-
         jewelTransform.DOScale(0f, 0.2f).OnComplete(() =>
         {
             jewel.SetActive(false);
@@ -940,6 +957,9 @@ public class ChronosAttackController : MonoBehaviour
 
         if (gamepadCursor != null)
             gamepadCursor.SetActive(false);
+
+        // IMPORTANT : réinitialiser le flag pour le prochain joyau
+        gm.isPausedForJewel = false;
     }
 
     // === HELPERS ===

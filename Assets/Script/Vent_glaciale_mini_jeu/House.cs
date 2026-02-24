@@ -9,6 +9,14 @@ public class House : MonoBehaviour
     public Sprite onSprite;
     public Sprite offSprite;
 
+    [Header("SFX")]
+    [Tooltip("Son joué quand la maison s'éteint")]
+    public AudioClip turnOffSfx;
+    [Tooltip("Son joué quand la maison est rallumée")]
+    public AudioClip turnOnSfx;
+
+    private AudioSource audioSource;
+
     // Nouvelle Input System
     private InputAction clickAction;
 
@@ -16,6 +24,13 @@ public class House : MonoBehaviour
     {
         sr = GetComponent<SpriteRenderer>();
         UpdateVisual();
+
+        // Initialise ou récupère l'AudioSource
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
 
         // Initialise l'action souris
         clickAction = new InputAction(type: InputActionType.Button, binding: "<Mouse>/leftButton");
@@ -36,6 +51,21 @@ public class House : MonoBehaviour
     {
         if (isOn == on)
             return;
+
+        // Jouer le son approprié
+        if (audioSource != null)
+        {
+            if (on && turnOnSfx != null)
+            {
+                audioSource.pitch = Random.Range(0.95f, 1.05f);
+                audioSource.PlayOneShot(turnOnSfx);
+            }
+            else if (!on && turnOffSfx != null)
+            {
+                audioSource.pitch = Random.Range(0.9f, 1.1f);
+                audioSource.PlayOneShot(turnOffSfx);
+            }
+        }
 
         // si on passe de ON à OFF, prévenir le GameManager
         if (isOn && !on && NuitGlacialeGameManager.Instance != null)

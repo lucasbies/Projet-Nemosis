@@ -239,7 +239,7 @@ public class chyronGameManager : MonoBehaviour
         if (sfxSource == null || bonusClip == null) return;
 
         float oldPitch = sfxSource.pitch;
-        sfxSource.pitch = Random.Range(0.95f, 1.05f);
+        sfxSource.pitch = Random.Range(0.9f, 1.1f);
         sfxSource.PlayOneShot(bonusClip);
         sfxSource.pitch = oldPitch;
     }
