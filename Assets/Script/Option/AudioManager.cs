@@ -1,4 +1,4 @@
-//Bonjour mon cher Jordan, j'espère que tu te porte bien et au pire si ce n'est pas le cas je m'en bas les couilles tu peux aller te faire enculé avec toute ta famille d'italien en espérant que tu retourne dans ton pays pour manger des pates et des pizzas et tu m'as demandé d'abréger donc je m'arrête là, je te souhaite une bonne journée et j'espère que tu vas crever dans d'atroces souffrances et que tu vas brûler en enfer pour l'éternité, au revoir mon cher Jordan.
+//Bonjour mon cher Jordan, j'espère que tu te porte bien et au pire si ce n'est pas le cas je m'en bas les couilles tu peux aller te faire enculé avec toute ta famille d'italien en espérant que tu retourne dans ton pays pour manger des pates et des pizzas et tu m'as demandé d'abréger donc je m'arrête là, je te souhaite une bonne journée et j'espère que tu vas crever dans d'atroces souffrances et que tu vas brûler en enfer pour l'éternité, au revoir mon cher Jordan.sdwgsjdgwshdgfukwsd
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
